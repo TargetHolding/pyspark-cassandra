@@ -2,9 +2,10 @@
 
 Utilities and examples to asssist in working with Cassandra and PySpark.
 
-Currently contains an updated and much more robust example of using an RDD's
-`newAPIHadoopRDD` to read from and `saveAsNewAPIHadoopDataset` to
-write to Cassandra 2.1. Demonstrates usage of CQL collections:
+Currently contains an updated and much more robust example of using a
+SparkContext's [`newAPIHadoopRDD`](https://spark.apache.org/docs/1.1.0/api/python/pyspark.context.SparkContext-class.html#newAPIHadoopRDD)
+to read from and an RDD's [`saveAsNewAPIHadoopDataset`](https://spark.apache.org/docs/1.1.0/api/python/pyspark.rdd.RDD-class.html#saveAsNewAPIHadoopDataset)
+to write to Cassandra 2.1. Demonstrates usage of CQL collections:
 [lists](http://www.datastax.com/documentation/cql/3.1/cql/cql_using/use_list_t.html),
 [sets](http://www.datastax.com/documentation/cql/3.1/cql/cql_using/use_set_t.html) and
 [maps](http://www.datastax.com/documentation/cql/3.1/cql/cql_using/use_map_t.html).
