@@ -96,10 +96,11 @@ def to_cql_output_format(user):
         ]
     )
 
+
 def run_driver(keyspace):
     sc = SparkContext(appName="PySpark Cassandra Hadoop Example")
 
-    # TODO: Reading from Cassandra
+    # Reading from Cassandra
     conf = {
         "cassandra.input.thrift.address": "localhost",
         "cassandra.input.thrift.port": "9160",
