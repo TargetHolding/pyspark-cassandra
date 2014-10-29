@@ -1,0 +1,6 @@
+maven_repo/com
+target/
+checkouts/
+*.class
+*.pyc
+*.log
