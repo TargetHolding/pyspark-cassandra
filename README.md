@@ -31,7 +31,7 @@ spark-submit --driver-class-path /path/to/pyspark-cassandra.jar myscript.py ...
 ## Using examples
 
 ```bash
-pip install -r requirments.txt
+pip install -r requirements.txt
 ```
 
 Then run examples either directly with `spark-submit`, or use the
@@ -52,7 +52,7 @@ this keyspace with two sample users to enable reading.
 Afterwards, you can run:
 
 ```bash
-./run_script src/main/python/pyspark_cassandra_hadoop_example run test
+./run_script.py src/main/python/pyspark_cassandra_hadoop_example run test
 ```
 
 Which runs a sample PySpark driver program that reads the existing values in
