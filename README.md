@@ -42,7 +42,7 @@ Then run examples either directly with `spark-submit`, or use the
 The example can first create the schema it requires via:
 
 ```bash
-./run_script.py src/main/python/pyspark_cassandra_hadoop_example init test
+./run_script.py src/main/python/pyspark_cassandra_hadoop_example.py init test
 ```
 
 The init command initializes the keyspace, table and inserts sample data.
@@ -52,7 +52,7 @@ this keyspace with two sample users to enable reading.
 Afterwards, you can run:
 
 ```bash
-./run_script.py src/main/python/pyspark_cassandra_hadoop_example run test
+./run_script.py src/main/python/pyspark_cassandra_hadoop_example.py run test
 ```
 
 Which runs a sample PySpark driver program that reads the existing values in
