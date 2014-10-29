@@ -16,17 +16,23 @@ Working on proper integration with the DataStax Cassandra Spark Connector.
 
 You'll need Maven in order to build the uberjar required for the examples.
 
-    mvn clean package
+```bash
+mvn clean package
+```
 
 Will create an uberjar at `target/pyspark-cassandra-<version>-SNAPSHOT.jar`.
 
 ## Using with PySpark
 
-    spark-submit --driver-class-path /path/to/pyspark-cassandra.jar myscript.py ...
+```bash
+spark-submit --driver-class-path /path/to/pyspark-cassandra.jar myscript.py ...
+```
 
 ## Using examples
 
-    pip install -r requirments.txt
+```bash
+pip install -r requirments.txt
+```
 
 Then run examples either directly with `spark-submit`, or use the
 `run_script.py` utility.
@@ -35,7 +41,9 @@ Then run examples either directly with `spark-submit`, or use the
 
 The example can first create the schema it requires via:
 
-    ./run_script.py src/main/python/pyspark_cassandra_hadoop_example init test
+```bash
+./run_script.py src/main/python/pyspark_cassandra_hadoop_example init test
+```
 
 The init command initializes the keyspace, table and inserts sample data.
 `"test"` is the name of the keyspace. A users table will be created in
@@ -43,7 +51,9 @@ this keyspace with two sample users to enable reading.
 
 Afterwards, you can run:
 
-    ./run_script src/main/python/pyspark_cassandra_hadoop_example run test
+```bash
+./run_script src/main/python/pyspark_cassandra_hadoop_example run test
+```
 
 Which runs a sample PySpark driver program that reads the existing values in
 the `users` table and then writes two new users to this table.
