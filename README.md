@@ -58,7 +58,33 @@ The primary representation of CQL rows in PySpark Cassandra are python dicts. Ho
 * `KV_DICTS`: A tuple of two python dicts represents the primary key columns and remaining (value) columns respectively.
 * `KV_TUPLES`: A tuple of two python tuples represents the primary key columns and remaining (value) columns respectively. The values in the tuple are in the CQL table column order / the order of the selected columns.
 
-CQL maps are supported through dicts. CQL sets and lists are supported through any iterable, but `set(...)` is obviously preferrable for CQL sets.
+Column values are related between CQL and python as follows:
+
+|  **CQL**  |       **python**     |
+|:---------:|:--------------------:|
+|   ascii   |    unicode string    |
+|   bigint  |         long         |
+|  boolean  |        boolean       |
+|  counter  |         long         |
+|  decimal  |        decimal       |
+|   double  |         float        |
+|   float   |         float        |
+|    int    |          int         |
+|    text   |    unicode string    |
+| timestamp |   datetime.datetime  |
+|  varchar  |    unicode string    |
+|   varint  |         long         |
+|    map    |         dict         |
+|    set    |          set         |
+|    list   |         list         |
+
+Note that support for the following types is not yet supported:
+
+|  **CQL**  |        **java**      |
+|    inet   | java.net.InetAddress |
+|    blob   |  java.nio.ByteBuffer |
+|    uuid   |    java.util.UUID    |
+|  timeuuid |    java.util.UUID    |
 
 
 ### CassandraSparkContext
