@@ -50,7 +50,7 @@ API
 
 The PySpark Cassandra API aims to stay close to the Cassandra Spark Connector API. Reading its [documentation](https://github.com/datastax/spark-cassandra-connector/#documentation) is a good place to start.
 
-### Data structures
+### pyspark_cassandra.RowFormat
 
 The primary representation of CQL rows in PySpark Cassandra are python dicts. However `sc.cassandraTable(...)` supports the `row_format` argument which can be any of the constants from `RowFormat`:
 * `DICT`: The default layout, a CQL row is represented as a python dict with the CQL row columns as keys.
@@ -81,24 +81,25 @@ Column values are related between CQL and python as follows:
 Note that support for the following types is not yet supported:
 
 |  **CQL**  |        **java**      |
+|:---------:|:--------------------:|
 |    inet   | java.net.InetAddress |
 |    blob   |  java.nio.ByteBuffer |
 |    uuid   |    java.util.UUID    |
 |  timeuuid |    java.util.UUID    |
 
 
-### CassandraSparkContext
+### pyspark_cassandra.CassandraSparkContext
 
 A `CassandraSparkContext` is very similar to a regular `SparkContext`. It is created in the same way, can be used to read files, parallelize local data, broadcast a variable, etc. See the [Spark Programming Guide](https://spark.apache.org/docs/1.2.0/programming-guide.html) for more details. *But* it exposes one additional method:
 
 * ``cassandraTable(keyspace, table)``:	Returns a CassandraRDD for the given keyspace and table.
 
 
-### RDD's in general
+### pyspark.RDD
 
 PySpark Cassandra supports saving arbitrary RDD's to Cassandra using:
 
-* ``saveToCassandra(keyspace, table, ...)``: Saves an RDD to Cassandra. The RDD is expected to contain dicts with keys mapping to CQL columns. Additional arguments which can be supplied are:
+* ``rdd.saveToCassandra(keyspace, table, ...)``: Saves an RDD to Cassandra. The RDD is expected to contain dicts with keys mapping to CQL columns. Additional arguments which can be supplied are:
 
   * ``columns(iterable)``: The columns to save, i.e. which keys to take from the dicts in the RDD.
   * ``batch_size(int)``: The size in bytes to batch up in an unlogged batch of CQL inserts.
@@ -113,7 +114,7 @@ PySpark Cassandra supports saving arbitrary RDD's to Cassandra using:
   * ``timestamp(int, date or datetime)``: The timestamp in milliseconds, date or datetime to use for the values.
 
 
-### CassandraRDD
+### pyspark_cassandra.CassandraRDD
 
 A `CassandraRDD` is equally very similar to a regular `RDD` in pyspark. 
 
@@ -128,10 +129,13 @@ Examples
 Creating a SparkContext with Cassandra support
 
 ```python
+import pyspark_cassandra
+
 conf = SparkConf() \
 	.setAppName("PySpark Cassandra Test") \
 	.setMaster("spark://spark-master:7077") \
 	.set("spark.cassandra.connection.host", "cas-1")
+
 sc = CassandraSparkContext(conf=conf)
 ```
 
