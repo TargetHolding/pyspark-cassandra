@@ -1,6 +1,12 @@
-maven_repo/com
-target/
-checkouts/
-*.class
+# maven
+target
+
+# python
 *.pyc
-*.log
+venv
+
+# eclipse
+.classpath
+.project
+.pydevproject
+.settings
