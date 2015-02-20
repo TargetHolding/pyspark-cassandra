@@ -93,8 +93,6 @@ PySpark Cassandra supports saving arbitrary RDD's to Cassandra using:
 Examples
 --------
 
-Examples:
-
 Creating a SparkContext with Cassandra support
 
 ```python
