@@ -52,7 +52,13 @@ The PySpark Cassandra API aims to stay close to the Cassandra Spark Connector AP
 
 ### Data structures
 
-PySpark Cassandra uses python dicts to represent CQL rows. CQL maps are supported through dicts. CQL sets and lists are supported through any iterable, but `set(...)` is obviously preferrable for CQL sets.
+The primary representation of CQL rows in PySpark Cassandra are python dicts. However `sc.cassandraTable(...)` supports the `row_format` argument which can be any of the constants from `RowFormat`:
+* `DICT`: The default layout, a CQL row is represented as a python dict with the CQL row columns as keys.
+* `TUPLE`: A CQL row is represented as a python tuple with the values in CQL table column order / the order of the selected columns.
+* `KV_DICTS`: A tuple of two python dicts represents the primary key columns and remaining (value) columns respectively.
+* `KV_TUPLES`: A tuple of two python tuples represents the primary key columns and remaining (value) columns respectively. The values in the tuple are in the CQL table column order / the order of the selected columns.
+
+CQL maps are supported through dicts. CQL sets and lists are supported through any iterable, but `set(...)` is obviously preferrable for CQL sets.
 
 
 ### CassandraSparkContext
@@ -151,4 +157,3 @@ Contributing
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)
 5. Create new Pull Request
-

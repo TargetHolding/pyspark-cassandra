@@ -10,7 +10,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 
 package pyspark_cassandra;
 
@@ -23,19 +23,22 @@ import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.Unpickler;
 import scala.collection.Seq;
 
-import com.datastax.spark.connector.BatchSize;
-import com.datastax.spark.connector.BytesInBatch;
 import com.datastax.spark.connector.cql.TableDef;
-import com.datastax.spark.connector.writer.BatchLevel;
 import com.datastax.spark.connector.writer.RowWriter;
 import com.datastax.spark.connector.writer.RowWriterFactory;
 
 public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Serializable {
 	private static final long serialVersionUID = 1L;
 
+	private RowFormat format;
+
+	public PickleRowWriterFactory(RowFormat format) {
+		this.format = format;
+	}
+
 	@Override
 	public RowWriter<byte[]> rowWriter(TableDef table, Seq<String> columnNames) {
-		return new PickleRowWriter(columnNames);
+		return new PickleRowWriter(columnNames, format);
 	}
 
 	private final class PickleRowWriter implements RowWriter<byte[]> {
@@ -43,9 +46,11 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 
 		private transient Unpickler unpickler;
 		private Seq<String> columnNames;
+		private RowFormat format;
 
-		public PickleRowWriter(Seq<String> columnNames) {
+		public PickleRowWriter(Seq<String> columnNames, RowFormat format) {
 			this.columnNames = columnNames;
+			this.format = format;
 		}
 
 		@Override
@@ -60,16 +65,26 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 			}
 
 			try {
-				Map<?, ?> row = unpickle(pickledRow);
+				Object row = unpickle(pickledRow);
 
-				for (int idx = 0; idx < this.columnNames.length(); idx++) {
-					Object value = row.get(this.columnNames.apply(idx));
+				RowFormat format = this.format;
+				if (format == null) {
+					format = this.detectFormat(row);
+				}
 
-					if (value == null) {
-						throw new RuntimeException("Missing value for column " + this.columnNames.apply(idx));
-					}
-
-					buffer[idx] = value;
+				switch (format) {
+				case DICT:
+					readAsDict((Map<?, ?>) row, buffer);
+					break;
+				case TUPLE:
+					readAsTuple((Object[]) row, buffer);
+					break;
+				case KV_DICTS:
+					readAsKeyValueDicts((Object[]) row, buffer);
+					break;
+				case KV_TUPLES:
+					readAsKeyValueTuples((Object[]) row, buffer);
+					break;
 				}
 			} catch (PickleException | IOException e) {
 				// TODO Auto-generated catch block
@@ -77,7 +92,42 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 			}
 		}
 
-		private Map<?, ?> unpickle(byte[] pickledRow) throws IOException {
+		private void readAsDict(Map<?, ?> row, Object[] buffer) {
+			for (int idx = 0; idx < this.columnNames.length(); idx++) {
+				buffer[idx] = row.get(this.columnNames.apply(idx));
+			}
+		}
+
+		private void readAsTuple(Object[] row, Object[] buffer) {
+			System.arraycopy(row, 0, buffer, 0, Math.max(row.length, buffer.length));
+		}
+
+		private void readAsKeyValueDicts(Object[] row, Object[] buffer) {
+			Map<?, ?> key = (Map<?, ?>) row[0];
+			Map<?, ?> value = (Map<?, ?>) row[1];
+
+			for (int idx = 0; idx < this.columnNames.length(); idx++) {
+				String columnName = this.columnNames.apply(idx);
+				Object val = key.get(columnName);
+
+				if (val == null) {
+					val = value.get(columnName);
+				}
+
+				buffer[idx] = val;
+			}
+		}
+
+		private void readAsKeyValueTuples(Object[] row, Object[] buffer) {
+			Object[] key = (Object[]) row[0];
+			Object[] value = (Object[]) row[1];
+
+			int keyLength = Math.min(key.length, buffer.length);
+			System.arraycopy(key, 0, buffer, 0, keyLength);
+			System.arraycopy(value, 0, buffer, keyLength, Math.min(value.length, buffer.length - keyLength));
+		}
+
+		private Object unpickle(byte[] pickledRow) throws IOException {
 			Object unpickled = unpickler.loads(pickledRow);
 
 			if (unpickled instanceof List) {
@@ -88,10 +138,45 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 					throw new RuntimeException("Can't write a list of rows in one go ... must be a map!");
 				}
 
-				return (Map<?, ?>) list.get(0);
+				return  list.get(0);
 			} else {
-				return (Map<?, ?>) unpickled;
+				return unpickled;
 			}
+		}
+
+		private RowFormat detectFormat(Object row) {
+			// The detection works because primary keys can't be maps, sets or lists. If the detection still fails, a
+			// user must set the row_format explicitly
+
+			// If the row is a map, the only possible format is DICT
+			if (row instanceof Map) {
+				return RowFormat.DICT;
+			}
+
+			// otherwise it must be a tuple
+			else if (row instanceof Object[]) {
+				Object[] tuple = (Object[]) row;
+
+				// If the row is a tuple of length two, try to figure out if it's a (key,value) tuple
+				if (tuple.length == 2) {
+					// if both tuple elements are maps, the format must be KV_DICTS, since primary keys can't be maps
+					if (tuple[0] instanceof Map && tuple[1] instanceof Map) {
+						return RowFormat.KV_DICTS;
+					}
+
+					// if both tuple elements are tuples themselves, the format must be KV_TUPLES
+					else if (tuple[0] instanceof Object[] && tuple[1] instanceof Object[]) {
+						return RowFormat.KV_TUPLES;
+					}
+				}
+
+				// if falling through, attempt to store it as a regular tuple
+				return RowFormat.TUPLE;
+			}
+
+			// or if falling through, we are unable to detect the row
+			throw new RuntimeException("Unable to detect or unsupported row format for " + row
+					+ ". Set it explicitly with saveToCassandra(..., row_format=...).");
 		}
 	}
 }

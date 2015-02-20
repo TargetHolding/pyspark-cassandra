@@ -14,7 +14,7 @@ from functools import partial
 
 from py4j.java_gateway import java_import
 import pyspark.context
-from pyspark_cassandra.rdd import CassandraRDD
+from pyspark_cassandra.rdd import CassandraRDD, RowFormat
 
 
 def convert(sc):
@@ -30,7 +30,7 @@ def _init_cassandra_spark_context(sc):
 	java_import(jvm, "com.datastax.spark.connector.*")
 	java_import(jvm, "com.datastax.spark.connector.japi.CassandraJavaUtil")
 	java_import(jvm, "com.datastax.spark.connector.writer.*")
-
+	
 	sc._cjcs = jvm.CassandraJavaUtil.javaFunctions(sc._jsc)
 
 
@@ -42,6 +42,6 @@ class CassandraSparkContext(pyspark.context.SparkContext):
 		super(CassandraSparkContext, self)._do_init(*args, **kwargs)
 		_init_cassandra_spark_context(self)
 
-	def cassandraTable(self, keyspace, table):
+	def cassandraTable(self, keyspace, table, row_format = RowFormat.DICT):
 		"""Returns a CassandraRDD for the given keyspace and table"""
-		return CassandraRDD(keyspace, table, self)
+		return CassandraRDD(keyspace, table, self, row_format)

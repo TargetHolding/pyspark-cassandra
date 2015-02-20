@@ -29,13 +29,27 @@ def _as_java_array(ctx, java_type, iterable):
 	return arr
 
 
+class RowFormat(object):
+	"""An enumeration of CQL row formats used in CassandraRDD"""
+	
+	DICT = 0
+	TUPLE = 1
+	KV_DICTS = 2
+	KV_TUPLES = 3
+	
+	values = (DICT, TUPLE, KV_DICTS, KV_TUPLES)
+
 
 class CassandraRDD(RDD):
 	"""A Resillient Distributed Dataset of Cassandra CQL rows. As any RDD objects of this class are immutable; i.e.
 	operations on this RDD generate a new RDD."""
+	
+	def __init__(self, keyspace, table, ctx, row_format = RowFormat.DICT):
+		if row_format < 0 or row_format >= len(RowFormat.values):
+			raise ValueError("invalid row_format %s" % row_format)
 
-	def __init__(self, keyspace, table, ctx):
-		jrdd = ctx._cjcs.cassandraTable(keyspace, table, ctx._jvm.PickleRowReaderFactory())
+		row_format = ctx._jvm.RowFormat.values()[row_format]
+		jrdd = ctx._cjcs.cassandraTable(keyspace, table, ctx._jvm.PickleRowReaderFactory(row_format))
 		super(CassandraRDD, self).__init__(jrdd, ctx, PickleSerializer())
 
 
@@ -58,13 +72,12 @@ class CassandraRDD(RDD):
 		new = copy(self)
 		new._jrdd = new._jrdd.where(clause, args)
 		return new
-
-
+	
 def saveToCassandra(
 		rdd, keyspace, table, columns=None,
 		batch_size=None, batch_buffer_size=None, batch_level=None,
 		consistency_level=None, parallelism_level=None,
-		ttl=None, timestamp=None
+		ttl=None, timestamp=None, row_format=None
 	):
 	"""
 	Saves an RDD to Cassandra. The RDD is expected to contain dicts with keys mapping to CQL columns.
@@ -105,6 +118,9 @@ def saveToCassandra(
 	@param timestamp(int, date or datetime):
 		The timestamp in milliseconds, date or datetime to use for the values.
 		If None given the Cassandra nodes determine the timestamp.
+	@param row_format(RowFormat):
+		Make explicit how to map the RDD elements into Cassandra rows.
+		If None given the mapping is auto-detected as far as possible.
 	"""
 
 	# convert timedelta ttl to milliseconds
@@ -148,9 +164,12 @@ def saveToCassandra(
 		ttl,
 		timestamp
 	)
+	
+	# determine the row format
+	row_format = jvm.RowFormat.values()[row_format] if row_format else None
 
 	# perform the actual saveToCassandra using the write_conf built before
 	rdd.ctx._jvm.CassandraJavaUtil.javaFunctions(rdd._jrdd) \
-		.writerBuilder(keyspace, table, rdd.ctx._jvm.PickleRowWriterFactory()) \
+		.writerBuilder(keyspace, table, rdd.ctx._jvm.PickleRowWriterFactory(row_format)) \
 		.withWriteConf(write_conf) \
 		.saveToCassandra()
