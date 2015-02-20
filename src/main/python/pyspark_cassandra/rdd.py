@@ -44,7 +44,10 @@ class CassandraRDD(RDD):
 	"""A Resillient Distributed Dataset of Cassandra CQL rows. As any RDD objects of this class are immutable; i.e.
 	operations on this RDD generate a new RDD."""
 	
-	def __init__(self, keyspace, table, ctx, row_format = RowFormat.DICT):
+	def __init__(self, keyspace, table, ctx, row_format=RowFormat.DICT):
+		self.keyspace = keyspace
+		self.table = table
+		
 		if row_format < 0 or row_format >= len(RowFormat.values):
 			raise ValueError("invalid row_format %s" % row_format)
 
@@ -74,7 +77,7 @@ class CassandraRDD(RDD):
 		return new
 	
 def saveToCassandra(
-		rdd, keyspace, table, columns=None,
+		rdd, keyspace=None, table=None, columns=None,
 		batch_size=None, batch_buffer_size=None, batch_level=None,
 		consistency_level=None, parallelism_level=None,
 		ttl=None, timestamp=None, row_format=None
@@ -86,9 +89,9 @@ def saveToCassandra(
 	@param rdd(RDD):
 		The RDD to save. Equals to self when invoking saveToCassandra on a monkey patched RDD.
 	@param keyspace(string):
-		The keyspace to save the RDD in.
+		The keyspace to save the RDD in. If not given and the rdd is a CassandraRDD the same keyspace is used.
 	@param table(string):
-		The CQL table to save the RDD in.
+		The CQL table to save the RDD in. If not given and the rdd is a CassandraRDD the same table is used.
 
 	Keyword arguments:
 	@param columns(iterable):
@@ -122,6 +125,15 @@ def saveToCassandra(
 		Make explicit how to map the RDD elements into Cassandra rows.
 		If None given the mapping is auto-detected as far as possible.
 	"""
+	
+	keyspace = keyspace or rdd.keyspace
+	table = table or rdd.table
+	
+	if not keyspace:
+		raise ValueError("keyspace not set")
+	
+	if not table:
+		raise ValueError("table not set")
 
 	# convert timedelta ttl to milliseconds
 	if ttl and isinstance(ttl, timedelta):

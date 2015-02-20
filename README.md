@@ -94,15 +94,6 @@ A `CassandraSparkContext` is very similar to a regular `SparkContext`. It is cre
 * ``cassandraTable(keyspace, table)``:	Returns a CassandraRDD for the given keyspace and table.
 
 
-### CassandraRDD
-
-A `CassandraRDD` is equally very similar to a regular `RDD` in pyspark. 
-
-* ``select(*columns)``: Creates a CassandraRDD with the select clause applied.
-* ``where(clause, *args)``: Creates a CassandraRDD with a CQL where clause applied. The clause can contain ? markers with the arguments supplied as *args.
-* ``saveToCassandra(...)``: See below.
-
-
 ### RDD's in general
 
 PySpark Cassandra supports saving arbitrary RDD's to Cassandra using:
@@ -120,6 +111,15 @@ PySpark Cassandra supports saving arbitrary RDD's to Cassandra using:
   * ``parallelism_level(int)``: The maximum number of batches written in parallel.
   * ``ttl(int or timedelta)``: The time to live as milliseconds or timedelta to use for the values.
   * ``timestamp(int, date or datetime)``: The timestamp in milliseconds, date or datetime to use for the values.
+
+
+### CassandraRDD
+
+A `CassandraRDD` is equally very similar to a regular `RDD` in pyspark. 
+
+* ``select(*columns)``: Creates a CassandraRDD with the select clause applied.
+* ``where(clause, *args)``: Creates a CassandraRDD with a CQL where clause applied. The clause can contain ? markers with the arguments supplied as *args.
+* ``saveToCassandra(...)``: As above, but the keyspace and/or table __may__ be omitted to save to the same keyspace and/or table. 
 
 
 Examples
