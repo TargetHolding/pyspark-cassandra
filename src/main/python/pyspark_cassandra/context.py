@@ -25,11 +25,26 @@ def convert(sc):
 
 def _init_cassandra_spark_context(sc):
 	jvm = sc._jvm
-	java_import(jvm, "pyspark_cassandra.*")
-	java_import(jvm, "com.datastax.driver.core.*")
-	java_import(jvm, "com.datastax.spark.connector.*")
-	java_import(jvm, "com.datastax.spark.connector.japi.CassandraJavaUtil")
-	java_import(jvm, "com.datastax.spark.connector.writer.*")
+
+	try:
+		jvm.Class.forName("pyspark_cassandra.RowFormat")
+		java_import(jvm, "pyspark_cassandra.*")
+	except:
+		raise ImportError("Java module pyspark_cassandra not found")	
+
+	try:
+		jvm.Class.forName("com.datastax.driver.core.Cluster")
+		java_import(jvm, "com.datastax.driver.core.*")
+	except:
+		raise ImportError("Java module com.datastax.driver.core not found")
+
+	try:
+		jvm.Class.forName("com.datastax.spark.connector.RDDFunctions")
+		java_import(jvm, "com.datastax.spark.connector.*")
+		java_import(jvm, "com.datastax.spark.connector.japi.CassandraJavaUtil")
+		java_import(jvm, "com.datastax.spark.connector.writer.*")
+	except:
+		raise ImportError("Java module com.datastax.spark.connector not found")
 	
 	sc._cjcs = jvm.CassandraJavaUtil.javaFunctions(sc._jsc)
 
