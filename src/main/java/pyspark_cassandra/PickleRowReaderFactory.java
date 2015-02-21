@@ -16,11 +16,16 @@ package pyspark_cassandra;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.Pickler;
@@ -37,6 +42,21 @@ import com.datastax.spark.connector.rdd.reader.RowReaderOptions;
 
 public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Serializable {
 	private static final long serialVersionUID = 1L;
+
+	static {
+		Pickler.registerCustomPickler(UUID.class, new UUIDPickler());
+		Pickler.registerCustomPickler(InetAddress.class, new AsStringPickler());
+		Pickler.registerCustomPickler(Inet4Address.class, new AsStringPickler());
+		Pickler.registerCustomPickler(Inet6Address.class, new AsStringPickler());
+		Pickler.registerCustomPickler(ByteBuffer.class, new ByteBufferPickler());
+		Pickler.registerCustomPickler(MappedByteBuffer.class, new ByteBufferPickler());
+
+		try {
+			Pickler.registerCustomPickler(Class.forName("java.nio.HeapByteBuffer"), new ByteBufferPickler());
+		} catch (ClassNotFoundException e) {
+			// the class is there ... but it's package protected ...
+		}
+	}
 
 	private RowFormat format;
 

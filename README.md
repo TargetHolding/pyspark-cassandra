@@ -64,28 +64,25 @@ Column values are related between CQL and python as follows:
 |:---------:|:--------------------:|
 |   ascii   |    unicode string    |
 |   bigint  |         long         |
+|    blob   |       bytearray      |
 |  boolean  |        boolean       |
-|  counter  |         long         |
+|  counter  |       int, long      |
 |  decimal  |        decimal       |
 |   double  |         float        |
 |   float   |         float        |
+|    inet   |          str         |
 |    int    |          int         |
-|    text   |    unicode string    |
-| timestamp |   datetime.datetime  |
-|  varchar  |    unicode string    |
-|   varint  |         long         |
 |    map    |         dict         |
 |    set    |          set         |
 |    list   |         list         |
+|    text   |    unicode string    |
+| timestamp |   datetime.datetime  |
+|  timeuuid |       uuid.UUID      |
+|  varchar  |    unicode string    |
+|   varint  |         long         |
+|    uuid   |       uuid.UUID      |
 
-Note that support for the following types is not yet supported:
-
-|  **CQL**  |        **java**      |
-|:---------:|:--------------------:|
-|    inet   | java.net.InetAddress |
-|    blob   |  java.nio.ByteBuffer |
-|    uuid   |    java.util.UUID    |
-|  timeuuid |    java.util.UUID    |
+__Writing `uuid` values is unfortunately not yet supported!__
 
 
 ### pyspark_cassandra.CassandraSparkContext
