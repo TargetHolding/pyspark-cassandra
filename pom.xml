@@ -38,37 +38,6 @@
         <!-- Apache Cassandra / DataStax -->
         <dependency>
             <groupId>org.apache.cassandra</groupId>
-            <artifactId>cassandra-all</artifactId>
-            <version>2.1.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-                    <artifactId>concurrentlinkedhashmap-lru</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.ning</groupId>
-                    <artifactId>compress-lzf</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>jline</groupId>
-                    <artifactId>jline</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.cassandra.deps</groupId>
-                    <artifactId>avro</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-thrift</artifactId>
             <version>2.1.0</version>
             <scope>compile</scope>
@@ -154,6 +123,13 @@
                             <exclude>org.scala-lang:*</exclude>
                             <exclude>junit:*</exclude>
                             <exclude>ch.qos.logback:*</exclude>
+                            
+                            <exclude>org.apache.commons:*</exclude>
+                            <exclude>org.codehaus.jackson*:*</exclude>
+                            <exclude>net.jpountz.lz4:*</exclude>
+                            <exclude>*:metrics-core</exclude>
+                            <exclude>org.slf4j:*</exclude>
+                            <exclude>org.xerial.snappy:*</exclude>
                         </excludes>
                     </artifactSet>
                     <filters>
@@ -163,6 +139,11 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                
+                                <exclude>build</exclude>
+                                <exclude>pyspark_cassandra.egg-info/</exclude>
+                                <exclude>**/*.py</exclude>
+                                <exclude>**/*.gitignore</exclude>
                             </excludes>
                         </filter>
                     </filters>
