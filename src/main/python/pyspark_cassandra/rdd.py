@@ -181,7 +181,9 @@ def saveToCassandra(
 	row_format = jvm.RowFormat.values()[row_format] if row_format else None
 
 	# perform the actual saveToCassandra using the write_conf built before
-	rdd.ctx._jvm.CassandraJavaUtil.javaFunctions(rdd._jrdd) \
+	rdd._reserialize(PickleSerializer()) \
+		.ctx._jvm.CassandraJavaUtil.javaFunctions(rdd._jrdd) \
 		.writerBuilder(keyspace, table, rdd.ctx._jvm.PickleRowWriterFactory(row_format)) \
 		.withWriteConf(write_conf) \
 		.saveToCassandra()
+
