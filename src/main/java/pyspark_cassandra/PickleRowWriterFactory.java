@@ -10,7 +10,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
- */
+*/
 
 package pyspark_cassandra;
 
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.Unpickler;
+import net.razorvine.pickle.custom.Unpickler;
 import scala.collection.Seq;
 
 import com.datastax.spark.connector.cql.TableDef;
@@ -29,6 +29,10 @@ import com.datastax.spark.connector.writer.RowWriterFactory;
 
 public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Serializable {
 	private static final long serialVersionUID = 1L;
+
+	static {
+		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
+	}
 
 	private RowFormat format;
 
@@ -138,7 +142,7 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 					throw new RuntimeException("Can't write a list of rows in one go ... must be a map!");
 				}
 
-				return  list.get(0);
+				return list.get(0);
 			} else {
 				return unpickled;
 			}

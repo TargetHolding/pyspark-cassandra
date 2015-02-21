@@ -82,8 +82,6 @@ Column values are related between CQL and python as follows:
 |   varint  |         long         |
 |    uuid   |       uuid.UUID      |
 
-__Writing `uuid` values is unfortunately not yet supported!__
-
 
 ### pyspark_cassandra.CassandraSparkContext
 
