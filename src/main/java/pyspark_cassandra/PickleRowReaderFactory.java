@@ -10,12 +10,13 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 
 package pyspark_cassandra;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -141,14 +142,14 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 			List<String> keyColumns = intersect(columnNames, tbl.primaryKey());
 			List<String> valueColumns = intersect(columnNames, tbl.regularColumns());
 
-			Map<String,Object> key = new HashMap<String,Object>(keyColumns.size());
-			Map<String,Object> value = new HashMap<String,Object>(valueColumns.size());
+			Map<String, Object> key = new HashMap<String, Object>(keyColumns.size());
+			Map<String, Object> value = new HashMap<String, Object>(valueColumns.size());
 
-			for (String keyColumn:keyColumns) {
+			for (String keyColumn : keyColumns) {
 				key.put(keyColumn, readColumn(keyColumn, row, protocolVersion));
 			}
 
-			for (String valueColumn:valueColumns) {
+			for (String valueColumn : valueColumns) {
 				value.put(valueColumn, readColumn(valueColumn, row, protocolVersion));
 			}
 
@@ -174,11 +175,13 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 		}
 
 		private Object readColumn(int idx, Row row, ProtocolVersion protocolVersion) {
-			return row.getColumnDefinitions().getType(idx).deserialize(row.getBytesUnsafe(idx), protocolVersion);
+			ByteBuffer bytes = row.getBytesUnsafe(idx);
+			return bytes == null ? null : row.getColumnDefinitions().getType(idx).deserialize(bytes, protocolVersion);
 		}
 
 		private Object readColumn(String name, Row row, ProtocolVersion protocolVersion) {
-			return row.getColumnDefinitions().getType(name).deserialize(row.getBytesUnsafe(name), protocolVersion);
+			ByteBuffer bytes = row.getBytesUnsafe(name);
+			return bytes == null ? null : row.getColumnDefinitions().getType(name).deserialize(bytes, protocolVersion);
 		}
 
 		private List<String> intersect(String[] columnNames, Seq<ColumnDef> def) {
