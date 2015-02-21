@@ -114,7 +114,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 				return pickler.dumps(ret);
 			} catch (PickleException | IOException e) {
 				// TODO clean up
-				throw new RuntimeException(e);
+				throw new RuntimeException("Unable to pickle " + ret, e);
 			}
 		}
 
