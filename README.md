@@ -59,6 +59,7 @@ The primary representation of CQL rows in PySpark Cassandra are python dicts. Ho
 * `TUPLE`: A CQL row is represented as a python tuple with the values in CQL table column order / the order of the selected columns.
 * `KV_DICTS`: A tuple of two python dicts represents the primary key columns and remaining (value) columns respectively.
 * `KV_TUPLES`: A tuple of two python tuples represents the primary key columns and remaining (value) columns respectively. The values in the tuple are in the CQL table column order / the order of the selected columns.
+* `ROW`: A pyspark.cql.Row object representing a CQL row.
 
 Column values are related between CQL and python as follows:
 

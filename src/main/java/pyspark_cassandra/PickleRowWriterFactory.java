@@ -10,7 +10,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 
 package pyspark_cassandra;
 
@@ -19,9 +19,13 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.spark.sql.cassandra.CassandraSQLRow;
+
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.custom.Unpickler;
+import scala.collection.IndexedSeq;
 import scala.collection.Seq;
+import akka.japi.Util;
 
 import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.writer.RowWriter;
@@ -32,6 +36,7 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 
 	static {
 		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
+		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraSQLRowUnpickler());
 	}
 
 	private RowFormat format;
@@ -89,6 +94,9 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 				case KV_TUPLES:
 					readAsKeyValueTuples((Object[]) row, buffer);
 					break;
+				case ROW:
+					readAsRow((CassandraSQLRow) row, buffer);
+					break;
 				}
 			} catch (PickleException | IOException e) {
 				// TODO Auto-generated catch block
@@ -131,6 +139,18 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 			System.arraycopy(value, 0, buffer, keyLength, Math.min(value.length, buffer.length - keyLength));
 		}
 
+		private void readAsRow(CassandraSQLRow row, Object[] buffer) {
+			IndexedSeq<String> names = row.fieldNames();
+			IndexedSeq<Object> values = row.fieldValues();
+
+			for (int i = 0; i < names.size(); i++) {
+				int idx = this.columnNames.indexOf(names.apply(i));
+				if (idx >= 0) {
+					buffer[idx] = values.apply(i);
+				}
+			}
+		}
+
 		private Object unpickle(byte[] pickledRow) throws IOException {
 			Object unpickled = unpickler.loads(pickledRow);
 
@@ -152,8 +172,13 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 			// The detection works because primary keys can't be maps, sets or lists. If the detection still fails, a
 			// user must set the row_format explicitly
 
+			// CassandraSQLRow map to ROW of course
+			if (row instanceof CassandraSQLRow) {
+				return RowFormat.ROW;
+			}
+
 			// If the row is a map, the only possible format is DICT
-			if (row instanceof Map) {
+			else if (row instanceof Map) {
 				return RowFormat.DICT;
 			}
 

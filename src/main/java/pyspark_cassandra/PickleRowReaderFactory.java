@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.spark.sql.cassandra.CassandraSQLRow;
+
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.Pickler;
 import scala.Option;
@@ -56,6 +58,8 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 		} catch (ClassNotFoundException e) {
 			// the class is there ... but it's package protected ...
 		}
+
+		Pickler.registerCustomPickler(CassandraSQLRow.class, new CassandraSQLRowPickler());
 	}
 
 	private RowFormat format;
@@ -128,6 +132,9 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 			case KV_TUPLES:
 				ret = readAsKeyValueTuples(row, columnNames, protocolVersion);
 				break;
+			case ROW:
+				ret = readAsRow(row, columnNames, protocolVersion);
+				break;
 			}
 
 			try {
@@ -193,7 +200,11 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 
 			return new Object[] { key, value };
 		}
-
+		
+		private CassandraSQLRow readAsRow(Row row, String[] columnNames, ProtocolVersion protocolVersion) {
+			return CassandraSQLRow.fromJavaDriverRow(row, columnNames, protocolVersion);
+		}
+		
 		private Object readColumn(int idx, Row row, ProtocolVersion protocolVersion) {
 			ByteBuffer bytes = row.getBytesUnsafe(idx);
 			return bytes == null ? null : row.getColumnDefinitions().getType(idx).deserialize(bytes, protocolVersion);
@@ -205,7 +216,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 		}
 
 		private List<String> intersect(String[] columnNames, Seq<ColumnDef> def) {
-			List<String> intersection = toList(columnNames);
+			List<String> intersection = Types.toList(columnNames);
 			intersection.retainAll(columnNames(def));
 			return intersection;
 		}
@@ -216,17 +227,8 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 			for (int i = 0; i < def.size(); i++) {
 				defs.add(def.apply(i).columnName());
 			}
+			
 			return defs;
-		}
-
-		private <T> List<T> toList(T[] arr) {
-			List<T> list = new ArrayList<T>(arr.length);
-
-			for (T v : arr) {
-				list.add(v);
-			}
-
-			return list;
 		}
 	}
 }
