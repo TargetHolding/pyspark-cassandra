@@ -111,7 +111,7 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 		}
 
 		private void readAsTuple(Object[] row, Object[] buffer) {
-			System.arraycopy(row, 0, buffer, 0, Math.max(row.length, buffer.length));
+			System.arraycopy(row, 0, buffer, 0, Math.min(row.length, buffer.length));
 		}
 
 		private void readAsKeyValueDicts(Object[] row, Object[] buffer) {
