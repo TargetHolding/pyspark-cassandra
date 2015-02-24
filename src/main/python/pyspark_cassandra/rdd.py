@@ -73,11 +73,13 @@ class CassandraRDD(RDD):
 	"""A Resillient Distributed Dataset of Cassandra CQL rows. As any RDD objects of this class are immutable; i.e.
 	operations on this RDD generate a new RDD."""
 	
-	def __init__(self, keyspace, table, ctx, row_format=RowFormat.DICT):
+	def __init__(self, keyspace, table, ctx, row_format=None):
 		self.keyspace = keyspace
 		self.table = table
 		
-		if row_format < 0 or row_format >= len(RowFormat.values):
+		if not row_format:
+			row_format = RowFormat.ROW
+		elif row_format < 0 or row_format >= len(RowFormat.values):
 			raise ValueError("invalid row_format %s" % row_format)
 
 		row_format = ctx._jvm.RowFormat.values()[row_format]

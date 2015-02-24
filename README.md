@@ -54,7 +54,7 @@ The PySpark Cassandra API aims to stay close to the Cassandra Spark Connector AP
 
 ### pyspark_cassandra.RowFormat
 
-The primary representation of CQL rows in PySpark Cassandra are python dicts. However `sc.cassandraTable(...)` supports the `row_format` argument which can be any of the constants from `RowFormat`:
+The primary representation of CQL rows in PySpark Cassandra is the ROW format. However `sc.cassandraTable(...)` supports the `row_format` argument which can be any of the constants from `RowFormat`:
 * `DICT`: The default layout, a CQL row is represented as a python dict with the CQL row columns as keys.
 * `TUPLE`: A CQL row is represented as a python tuple with the values in CQL table column order / the order of the selected columns.
 * `KV_DICTS`: A tuple of two python dicts represents the primary key columns and remaining (value) columns respectively.
