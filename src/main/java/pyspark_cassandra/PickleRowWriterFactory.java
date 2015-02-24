@@ -37,6 +37,7 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 	static {
 		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
 		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraSQLRowUnpickler());
+		Unpickler.registerConstructor("pyspark_cassandra.row", "_create_row", new CassandraSQLRowUnpickler());
 	}
 
 	private RowFormat format;

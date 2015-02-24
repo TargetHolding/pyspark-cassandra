@@ -20,7 +20,7 @@ public class CassandraSQLRowPickler implements IObjectPickler {
 		List<Object> fieldValues = Types.toList(row.fieldValues());
 
 		out.write(Opcodes.GLOBAL);
-		out.write("pyspark.sql\n_create_row\n".getBytes());
+		out.write("pyspark_cassandra.row\n_create_row\n".getBytes());
 		out.write(Opcodes.MARK);
 		pickler.save(fieldNames);
 		pickler.save(fieldValues);

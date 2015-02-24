@@ -23,10 +23,11 @@ import pyspark_cassandra.context
 
 from .context import CassandraSparkContext, convert
 from .rdd import CassandraRDD, saveToCassandra, RowFormat
+from .row import Row
 
 
 __all__ = [
-    "CassandraSparkContext", "CassandraRDD", "RowFormat"
+    "CassandraSparkContext", "CassandraRDD", "RowFormat", "Row"
 ]
 
 
