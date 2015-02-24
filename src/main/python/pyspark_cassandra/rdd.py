@@ -10,10 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyspark.rdd import RDD
-from pyspark.serializers import PickleSerializer
+from collections import Set, Iterable, Mapping
 from copy import copy
 from datetime import timedelta, datetime, date
+from time import mktime
+
+from pyspark.rdd import RDD
+from pyspark.serializers import PickleSerializer
 
 
 def _as_java_array(ctx, java_type, iterable):
@@ -24,9 +27,34 @@ def _as_java_array(ctx, java_type, iterable):
 	arr = ctx._gateway.new_array(java_type, len(lst))
 
 	for i, e in enumerate(lst):
-		arr[i] = e
+		arr[i] = _as_java_object(ctx, e)
 
 	return arr
+
+def _as_java_object(ctx, obj):
+	"""Converts a limited set of types to their corresponding types in java. Supported are 'primitives' (which aren't
+	converted), datetime.datetime and the set-, dict- and iterable-like types.
+	"""
+	
+	if isinstance(obj, (bool, int, float, str)):
+		return obj
+	elif isinstance(obj, datetime):
+		timestamp = int(mktime(obj.timetuple()) * 1000)
+		return ctx._gateway.jvm.java.util.Date(timestamp)
+	elif isinstance(obj, (set, Set)) or(hasattr(obj, 'intersection') and  hasattr(obj, '__iter__')):
+		hash_set = ctx._gateway.jvm.java.util.HashSet()
+		for e in obj: hash_set.add(e)
+		return hash_set
+	elif isinstance(obj, (dict, Mapping)) or hasattr(obj, 'iteritems'):
+		hash_map = ctx._gateway.jvm.java.util.HashMap()
+		for (k, v) in obj: hash_map[k] = v
+		return hash_map
+	elif isinstance(obj, (list, Iterable)) or hasattr(obj, '__iter__'):
+		array_list = ctx._gateway.jvm.java.util.ArrayList()
+		for e in obj: array_list.append(e)
+		return array_list
+	else:
+		return obj
 
 
 class RowFormat(object):
