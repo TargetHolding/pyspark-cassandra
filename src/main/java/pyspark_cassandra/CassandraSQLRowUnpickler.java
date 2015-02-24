@@ -1,7 +1,6 @@
 package pyspark_cassandra;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import net.razorvine.pickle.IObjectConstructor;
 import net.razorvine.pickle.PickleException;
