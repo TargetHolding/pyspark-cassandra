@@ -10,51 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import Set, Iterable, Mapping
 from copy import copy
 from datetime import timedelta, datetime, date
-from time import mktime
 
 from pyspark.rdd import RDD
 from pyspark.serializers import PickleSerializer
-
-
-def _as_java_array(ctx, java_type, iterable):
-	"""Creates a Java array from a Python iterable, using the p4yj gateway and JVM from a SparkContext object"""
-
-	java_type = ctx._gateway.jvm.__getattr__(java_type)
-	lst = list(iterable)
-	arr = ctx._gateway.new_array(java_type, len(lst))
-
-	for i, e in enumerate(lst):
-		arr[i] = _as_java_object(ctx, e)
-
-	return arr
-
-def _as_java_object(ctx, obj):
-	"""Converts a limited set of types to their corresponding types in java. Supported are 'primitives' (which aren't
-	converted), datetime.datetime and the set-, dict- and iterable-like types.
-	"""
-	
-	if isinstance(obj, (bool, int, float, str)):
-		return obj
-	elif isinstance(obj, datetime):
-		timestamp = int(mktime(obj.timetuple()) * 1000)
-		return ctx._gateway.jvm.java.util.Date(timestamp)
-	elif isinstance(obj, (set, Set)) or(hasattr(obj, 'intersection') and  hasattr(obj, '__iter__')):
-		hash_set = ctx._gateway.jvm.java.util.HashSet()
-		for e in obj: hash_set.add(e)
-		return hash_set
-	elif isinstance(obj, (dict, Mapping)) or hasattr(obj, 'iteritems'):
-		hash_map = ctx._gateway.jvm.java.util.HashMap()
-		for (k, v) in obj: hash_map[k] = v
-		return hash_map
-	elif isinstance(obj, (list, Iterable)) or hasattr(obj, '__iter__'):
-		array_list = ctx._gateway.jvm.java.util.ArrayList()
-		for e in obj: array_list.append(e)
-		return array_list
-	else:
-		return obj
+from pyspark_cassandra.types import as_java_array
 
 
 class RowFormat(object):
@@ -110,7 +71,7 @@ class CassandraRDD(RDD):
 	def select(self, *columns):
 		"""Creates a CassandraRDD with the select clause applied.""" 
 
-		columns = _as_java_array(self.ctx, "String", (str(c) for c in columns))
+		columns = as_java_array(self.ctx._gateway, "String", (str(c) for c in columns))
 		new = copy(self)
 		new._jrdd = new._jrdd.select(columns)
 		return new
@@ -122,7 +83,7 @@ class CassandraRDD(RDD):
 		@param *args: The parameters for the ? markers in the where clause.
 		"""
 
-		args = _as_java_array(self.ctx, "Object", args)
+		args = as_java_array(self.ctx._gateway, "Object", args)
 		new = copy(self)
 		new._jrdd = new._jrdd.where(clause, args)
 		return new

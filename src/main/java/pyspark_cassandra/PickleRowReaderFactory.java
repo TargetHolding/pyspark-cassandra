@@ -35,6 +35,7 @@ import org.apache.spark.sql.cassandra.CassandraSQLRow;
 import pyspark_cassandra.types.AsStringPickler;
 import pyspark_cassandra.types.ByteBufferPickler;
 import pyspark_cassandra.types.CassandraSQLRowPickler;
+import pyspark_cassandra.types.ScalaMapPickler;
 import pyspark_cassandra.types.Types;
 import pyspark_cassandra.types.UDTValuePickler;
 import pyspark_cassandra.types.UUIDPickler;
@@ -65,6 +66,16 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 			Pickler.registerCustomPickler(Class.forName("java.nio.HeapByteBuffer"), new ByteBufferPickler());
 		} catch (ClassNotFoundException e) {
 			// the class is there ... but it's package protected ...
+		}
+
+		Pickler.registerCustomPickler(scala.collection.Map.class, new ScalaMapPickler());
+		Pickler.registerCustomPickler(scala.collection.mutable.Map.class, new ScalaMapPickler());
+		Pickler.registerCustomPickler(scala.collection.immutable.Map.class, new ScalaMapPickler());
+		
+		try {
+			Pickler.registerCustomPickler(Class.forName("scala.collection.immutable.Map$Map1"), new ScalaMapPickler());
+		} catch (ClassNotFoundException e) {
+			// the class is there ... but cannot be referenced using its binary name ...
 		}
 
 		Pickler.registerCustomPickler(CassandraSQLRow.class, new CassandraSQLRowPickler());
@@ -209,11 +220,11 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 
 			return new Object[] { key, value };
 		}
-		
+
 		private CassandraSQLRow readAsRow(Row row, String[] columnNames, ProtocolVersion protocolVersion) {
 			return CassandraSQLRow.fromJavaDriverRow(row, columnNames, protocolVersion);
 		}
-		
+
 		private Object readColumn(int idx, Row row, ProtocolVersion protocolVersion) {
 			ByteBuffer bytes = row.getBytesUnsafe(idx);
 			return bytes == null ? null : row.getColumnDefinitions().getType(idx).deserialize(bytes, protocolVersion);
@@ -225,7 +236,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 		}
 
 		private List<String> intersect(String[] columnNames, Seq<ColumnDef> def) {
-			List<String> intersection = Types.toList(columnNames);
+			List<String> intersection = Types.toJavaList(columnNames);
 			intersection.retainAll(columnNames(def));
 			return intersection;
 		}
@@ -236,7 +247,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 			for (int i = 0; i < def.size(); i++) {
 				defs.add(def.apply(i).columnName());
 			}
-			
+
 			return defs;
 		}
 	}

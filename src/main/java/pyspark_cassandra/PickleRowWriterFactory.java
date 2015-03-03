@@ -25,6 +25,7 @@ import net.razorvine.pickle.custom.Unpickler;
 import org.apache.spark.sql.cassandra.CassandraSQLRow;
 
 import pyspark_cassandra.types.CassandraSQLRowUnpickler;
+import pyspark_cassandra.types.UDTValueUnpickler;
 import pyspark_cassandra.types.UUIDUnpickler;
 import scala.collection.IndexedSeq;
 import scala.collection.Seq;
@@ -39,7 +40,8 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 	static {
 		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
 		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraSQLRowUnpickler());
-		Unpickler.registerConstructor("pyspark_cassandra.row", "_create_row", new CassandraSQLRowUnpickler());
+		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", new CassandraSQLRowUnpickler());
+		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_udt", new UDTValueUnpickler());
 	}
 
 	private RowFormat format;
@@ -162,7 +164,8 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 
 				// TODO proper exceptions
 				if (list.size() > 1) {
-					throw new RuntimeException("Can't write a list of rows in one go ... must be a dict, tuple or row object!");
+					throw new RuntimeException(
+							"Can't write a list of rows in one go ... must be a dict, tuple or row object!");
 				}
 
 				return list.get(0);

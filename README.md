@@ -8,6 +8,7 @@ This module provides python support for Apache Spark's Resillient Distributed Da
 This project was initially forked from https://github.com/Parsely/pyspark-cassandra, but in order to submit it to http://spark-packages.org/, a plain old repository was created. 
 
 
+
 Building
 --------
 
@@ -23,6 +24,7 @@ This creates 1) a fat jar with the Cassandra - Spark connector and additional cl
 * `target/pyspark_cassandra_<version>-<python version>.egg`.
 
 
+
 Using with PySpark
 ------------------
 
@@ -35,6 +37,7 @@ spark-submit \
 	--master spark://spark-master:7077 \
 	yourscript.py
 ```
+
 
 
 Using with PySpark shell
@@ -52,6 +55,7 @@ API
 
 The PySpark Cassandra API aims to stay close to the Cassandra Spark Connector API. Reading its [documentation](https://github.com/datastax/spark-cassandra-connector/#documentation) is a good place to start.
 
+
 ### pyspark_cassandra.RowFormat
 
 The primary representation of CQL rows in PySpark Cassandra is the ROW format. However `sc.cassandraTable(...)` supports the `row_format` argument which can be any of the constants from `RowFormat`:
@@ -63,28 +67,39 @@ The primary representation of CQL rows in PySpark Cassandra is the ROW format. H
 
 Column values are related between CQL and python as follows:
 
-|  **CQL**  |       **python**     |
-|:---------:|:--------------------:|
-|   ascii   |    unicode string    |
-|   bigint  |         long         |
-|    blob   |       bytearray      |
-|  boolean  |        boolean       |
-|  counter  |       int, long      |
-|  decimal  |        decimal       |
-|   double  |         float        |
-|   float   |         float        |
-|    inet   |          str         |
-|    int    |          int         |
-|    map    |         dict         |
-|    set    |          set         |
-|    list   |         list         |
-|    text   |    unicode string    |
-| timestamp |   datetime.datetime  |
-|  timeuuid |       uuid.UUID      |
-|  varchar  |    unicode string    |
-|   varint  |         long         |
-|    uuid   |       uuid.UUID      |
+|  **CQL**  |       **python**      |
+|:---------:|:---------------------:|
+|   ascii   |    unicode string     |
+|   bigint  |         long          |
+|    blob   |       bytearray       |
+|  boolean  |        boolean        |
+|  counter  |       int, long       |
+|  decimal  |        decimal        |
+|   double  |         float         |
+|   float   |         float         |
+|    inet   |          str          |
+|    int    |          int          |
+|    map    |         dict          |
+|    set    |          set          |
+|    list   |         list          |
+|    text   |    unicode string     |
+| timestamp |   datetime.datetime   |
+|  timeuuid |       uuid.UUID       |
+|  varchar  |    unicode string     |
+|   varint  |         long          |
+|    uuid   |       uuid.UUID       |
+|   _UDT_   | pyspark_cassandra.UDT |
 
+
+### pyspark_cassandra.Row
+
+This is the default type to which CQL rows are mapped. It is directly compatible with pyspark.sql.Row but is (correctly) mutable and provides some other improvements.
+
+
+### pyspark_cassandra.UDT
+
+This type is structurally identical to pyspark_cassandra.Row but serves user defined types. Mapping to custom python types (e.g. via CQLEngine) is not yet supported.
+ 
 
 ### pyspark_cassandra.CassandraSparkContext
 
@@ -119,11 +134,12 @@ PySpark Cassandra supports saving arbitrary RDD's to Cassandra using:
 
 ### pyspark_cassandra.CassandraRDD
 
-A `CassandraRDD` is equally very similar to a regular `RDD` in pyspark. 
+A `CassandraRDD` is very similar to a regular `RDD` in pyspark. It is extended with the following methods: 
 
 * ``select(*columns)``: Creates a CassandraRDD with the select clause applied.
 * ``where(clause, *args)``: Creates a CassandraRDD with a CQL where clause applied. The clause can contain ? markers with the arguments supplied as *args.
 * ``saveToCassandra(...)``: As above, but the keyspace and/or table __may__ be omitted to save to the same keyspace and/or table. 
+
 
 
 Examples
@@ -180,6 +196,7 @@ rdd.saveToCassandra(
 Problems / ideas?
 -----------------
 Feel free to use the issue tracker propose new functionality and / or report bugs.
+
 
 
 Contributing
