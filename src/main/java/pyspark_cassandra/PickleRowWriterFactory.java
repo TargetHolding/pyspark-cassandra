@@ -160,7 +160,7 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 
 				// TODO proper exceptions
 				if (list.size() > 1) {
-					throw new RuntimeException("Can't write a list of rows in one go ... must be a map!");
+					throw new RuntimeException("Can't write a list of rows in one go ... must be a dict, tuple or row object!");
 				}
 
 				return list.get(0);
