@@ -7,6 +7,14 @@ This module provides python support for Apache Spark's Resillient Distributed Da
 
 This project was initially forked from https://github.com/Parsely/pyspark-cassandra, but in order to submit it to http://spark-packages.org/, a plain old repository was created. 
 
+**Contents:**
+* [Building](#building)
+* [Using with PySpark](#using-with-pyspark)
+* [Using with PySpark shell](#using-with-pyspark-shell)
+* [API](#api)
+* [Examples](#examples)
+* [Problems / ideas?](#problems--ideas)
+* [Contributing](#contributing)
 
 
 Building
@@ -93,7 +101,7 @@ Column values are related between CQL and python as follows:
 
 ### pyspark_cassandra.Row
 
-This is the default type to which CQL rows are mapped. It is directly compatible with pyspark.sql.Row but is (correctly) mutable and provides some other improvements.
+This is the default type to which CQL rows are mapped. It is directly compatible with `pyspark.sql.Row` but is (correctly) mutable and provides some other improvements.
 
 
 ### pyspark_cassandra.UDT
