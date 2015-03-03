@@ -29,7 +29,10 @@ class Row(tuple):
 	def __getattr__(self, name):
 		if name.startswith("__"):
 			raise AttributeError(name)
-		return self.__FIELDS__[name]
+		try:
+			return self.__FIELDS__[name]
+		except KeyError:
+			raise AttributeError(name)
 	
 	def __setattr__(self, name, value):
 		if hasattr(self, "__FIELDS__"):
