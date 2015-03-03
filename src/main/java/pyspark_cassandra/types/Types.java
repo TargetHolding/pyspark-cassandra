@@ -1,4 +1,4 @@
-package pyspark_cassandra;
+package pyspark_cassandra.types;
 
 import java.util.ArrayList;
 import java.util.List;

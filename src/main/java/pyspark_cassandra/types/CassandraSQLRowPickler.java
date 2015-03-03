@@ -1,4 +1,4 @@
-package pyspark_cassandra;
+package pyspark_cassandra.types;
 
 import java.io.IOException;
 import java.io.OutputStream;

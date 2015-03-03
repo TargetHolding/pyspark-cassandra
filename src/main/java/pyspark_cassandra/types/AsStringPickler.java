@@ -12,22 +12,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pyspark_cassandra;
+package pyspark_cassandra.types;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import net.razorvine.pickle.IObjectPickler;
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.Pickler;
 
-public class ByteBufferPickler implements IObjectPickler {
+public class AsStringPickler implements IObjectPickler {
 	@Override
 	public void pickle(Object o, OutputStream out, Pickler pickler) throws PickleException, IOException {
-		ByteBuffer buffer = (ByteBuffer) o;
-		byte[] bytes = new byte[buffer.remaining()];
-		buffer.get(bytes);
-		pickler.save(bytes);
+		pickler.save(o.toString());
 	}
 }

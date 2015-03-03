@@ -27,15 +27,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.spark.sql.cassandra.CassandraSQLRow;
-
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.Pickler;
+
+import org.apache.spark.sql.cassandra.CassandraSQLRow;
+
+import pyspark_cassandra.types.AsStringPickler;
+import pyspark_cassandra.types.ByteBufferPickler;
+import pyspark_cassandra.types.CassandraSQLRowPickler;
+import pyspark_cassandra.types.Types;
+import pyspark_cassandra.types.UDTValuePickler;
+import pyspark_cassandra.types.UUIDPickler;
 import scala.Option;
 import scala.collection.Seq;
 
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
+import com.datastax.spark.connector.UDTValue;
 import com.datastax.spark.connector.cql.ColumnDef;
 import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.rdd.reader.RowReader;
@@ -60,6 +68,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 		}
 
 		Pickler.registerCustomPickler(CassandraSQLRow.class, new CassandraSQLRowPickler());
+		Pickler.registerCustomPickler(UDTValue.class, new UDTValuePickler());
 	}
 
 	private RowFormat format;

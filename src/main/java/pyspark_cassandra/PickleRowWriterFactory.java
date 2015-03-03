@@ -19,13 +19,15 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.spark.sql.cassandra.CassandraSQLRow;
-
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.custom.Unpickler;
+
+import org.apache.spark.sql.cassandra.CassandraSQLRow;
+
+import pyspark_cassandra.types.CassandraSQLRowUnpickler;
+import pyspark_cassandra.types.UUIDUnpickler;
 import scala.collection.IndexedSeq;
 import scala.collection.Seq;
-import akka.japi.Util;
 
 import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.writer.RowWriter;

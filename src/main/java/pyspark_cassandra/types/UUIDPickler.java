@@ -12,7 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pyspark_cassandra;
+package pyspark_cassandra.types;
 
 import java.io.IOException;
 import java.io.OutputStream;
