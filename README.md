@@ -90,7 +90,12 @@ Column values are related between CQL and python as follows:
 
 A `CassandraSparkContext` is very similar to a regular `SparkContext`. It is created in the same way, can be used to read files, parallelize local data, broadcast a variable, etc. See the [Spark Programming Guide](https://spark.apache.org/docs/1.2.0/programming-guide.html) for more details. *But* it exposes one additional method:
 
-* ``cassandraTable(keyspace, table)``:	Returns a CassandraRDD for the given keyspace and table.
+* ``cassandraTable(keyspace, table, ...)``:	Returns a CassandraRDD for the given keyspace and table. Additional arguments which can be provided:
+
+  * `row_format` can be set to any of the `pyspark_cassandra.RowFormat` values (defaults to `ROW`)
+  * `split_size` sets the size in the number of CQL rows in each partition (defaults to `100000`)
+  * `fetch_size` sets the number of rows to fetch per request from Cassandra (defaults to `1000`)
+  * `consistency_level` sets with which consistency level to read the data (defaults to `LOCAL_ONE`)
 
 
 ### pyspark.RDD

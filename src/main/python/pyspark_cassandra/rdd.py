@@ -73,7 +73,7 @@ class CassandraRDD(RDD):
 	"""A Resillient Distributed Dataset of Cassandra CQL rows. As any RDD objects of this class are immutable; i.e.
 	operations on this RDD generate a new RDD."""
 	
-	def __init__(self, keyspace, table, ctx, row_format=None):
+	def __init__(self, keyspace, table, ctx, row_format=None, split_size=None, fetch_size=None, consistency_level=None):
 		self.keyspace = keyspace
 		self.table = table
 		
@@ -82,8 +82,28 @@ class CassandraRDD(RDD):
 		elif row_format < 0 or row_format >= len(RowFormat.values):
 			raise ValueError("invalid row_format %s" % row_format)
 
+		jvm = ctx._jvm
+		ReadConf = jvm.ReadConf
+		
+		split_size = split_size or ReadConf.DefaultSplitSize()
+		fetch_size = fetch_size or ReadConf.DefaultFetchSize()
+		consistency_level = jvm.ConsistencyLevel.values()[consistency_level] \
+			if consistency_level else ReadConf.DefaultConsistencyLevel()
+		
+		read_conf = ReadConf(
+			split_size,
+			fetch_size,
+			consistency_level,
+		)
+		
 		row_format = ctx._jvm.RowFormat.values()[row_format]
-		jrdd = ctx._cjcs.cassandraTable(keyspace, table, ctx._jvm.PickleRowReaderFactory(row_format))
+		reader_factory = ctx._jvm.PickleRowReaderFactory(row_format)
+		jrdd = (
+			ctx._cjcs \
+				.cassandraTable(keyspace, table, reader_factory)
+				.withReadConf(read_conf)
+		)
+		
 		super(CassandraRDD, self).__init__(jrdd, ctx, PickleSerializer())
 
 
@@ -119,7 +139,7 @@ def saveToCassandra(
 	Arguments:
 	@param rdd(RDD):
 		The RDD to save. Equals to self when invoking saveToCassandra on a monkey patched RDD.
-	@param keyspace(string):
+	@param keyspace(string):in
 		The keyspace to save the RDD in. If not given and the rdd is a CassandraRDD the same keyspace is used.
 	@param table(string):
 		The CQL table to save the RDD in. If not given and the rdd is a CassandraRDD the same table is used.
