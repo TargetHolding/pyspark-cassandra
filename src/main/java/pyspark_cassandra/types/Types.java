@@ -15,6 +15,7 @@ limitations under the License.
 package pyspark_cassandra.types;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -57,12 +58,16 @@ public class Types {
 	}
 
 	public static <E> ArraySeq<E> toArraySeq(E[] elements) {
-		ArraySeq<E> seq = new ArraySeq<E>(elements.length);
-		
-		for (int i = 0; i < elements.length; i++) {
-			seq.update(i, elements[i]);
-		}
+		return toArraySeq(Arrays.asList(elements));
+	}
 
+	public static <E> ArraySeq<E> toArraySeq(List<E> elements) {
+		ArraySeq<E> seq = new ArraySeq<E>(elements.size());
+		
+		for (int i = 0; i < elements.size(); i++) {
+			seq.update(i, elements.get(i));
+		}
+		
 		return seq;
 	}
 }
