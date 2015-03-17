@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.Pickler;
+import net.razorvine.pickle.custom.Pickler;
 
 import org.apache.spark.sql.cassandra.CassandraSQLRow;
 

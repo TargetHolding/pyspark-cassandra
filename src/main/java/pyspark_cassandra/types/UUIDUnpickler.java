@@ -39,5 +39,4 @@ public class UUIDUnpickler implements IObjectConstructor {
 			return new UUID(buffer.getLong(), buffer.getLong());
 		}
 	}
-
 }

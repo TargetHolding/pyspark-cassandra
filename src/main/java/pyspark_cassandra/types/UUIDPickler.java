@@ -18,10 +18,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.UUID;
 
-import net.razorvine.pickle.IObjectPickler;
 import net.razorvine.pickle.Opcodes;
 import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.Pickler;
+import net.razorvine.pickle.custom.IObjectPickler;
+import net.razorvine.pickle.custom.Pickler;
 
 public class UUIDPickler implements IObjectPickler {
 	@Override

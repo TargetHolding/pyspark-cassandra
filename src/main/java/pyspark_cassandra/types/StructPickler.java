@@ -10,7 +10,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 
 package pyspark_cassandra.types;
 
@@ -18,11 +18,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-import net.razorvine.pickle.IObjectPickler;
 import net.razorvine.pickle.Opcodes;
 import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.Pickler;
-
+import net.razorvine.pickle.custom.IObjectPickler;
+import net.razorvine.pickle.custom.Pickler;
 import scala.collection.IndexedSeq;
 
 public abstract class StructPickler implements IObjectPickler {

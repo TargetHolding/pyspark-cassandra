@@ -17,9 +17,9 @@ package pyspark_cassandra.types;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import net.razorvine.pickle.IObjectPickler;
 import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.Pickler;
+import net.razorvine.pickle.custom.IObjectPickler;
+import net.razorvine.pickle.custom.Pickler;
 
 public class AsStringPickler implements IObjectPickler {
 	@Override

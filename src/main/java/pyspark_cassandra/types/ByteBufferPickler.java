@@ -18,9 +18,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import net.razorvine.pickle.IObjectPickler;
 import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.Pickler;
+import net.razorvine.pickle.custom.IObjectPickler;
+import net.razorvine.pickle.custom.Pickler;
 
 public class ByteBufferPickler implements IObjectPickler {
 	@Override
