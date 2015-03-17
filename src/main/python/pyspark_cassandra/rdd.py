@@ -88,6 +88,11 @@ class CassandraRDD(RDD):
 		new._jrdd = new._jrdd.where(clause, args)
 		return new
 	
+	def __copy__(self):
+		c = CassandraRDD.__new__(CassandraRDD)
+		c.__dict__.update(self.__dict__)
+		return c
+	
 def saveToCassandra(
 		rdd, keyspace=None, table=None, columns=None,
 		batch_size=None, batch_buffer_size=None, batch_level=None,
