@@ -8,6 +8,7 @@ This module provides python support for Apache Spark's Resillient Distributed Da
 This project was initially forked from https://github.com/Parsely/pyspark-cassandra, but in order to submit it to http://spark-packages.org/, a plain old repository was created. 
 
 **Contents:**
+* [Compatibility](#compatibility)
 * [Building](#building)
 * [Using with PySpark](#using-with-pyspark)
 * [Using with PySpark shell](#using-with-pyspark-shell)
@@ -15,6 +16,14 @@ This project was initially forked from https://github.com/Parsely/pyspark-cassan
 * [Examples](#examples)
 * [Problems / ideas?](#problems--ideas)
 * [Contributing](#contributing)
+
+
+
+Compatibility
+-------------
+
+Currently PySpark Cassandra has been succesfully used with Spark version 1.2.0 and DataStax Spark Cassandra Connector version 1.2. Feedback on (in-)compatibility with other versions is much appreciated.
+
 
 
 Building
