@@ -58,7 +58,13 @@ public class Types {
 	}
 
 	public static <E> ArraySeq<E> toArraySeq(E[] elements) {
-		return toArraySeq(Arrays.asList(elements));
+		ArraySeq<E> seq = new ArraySeq<E>(elements.length);
+		
+		for (int i = 0; i < elements.length; i++) {
+			seq.update(i, elements[i]);
+		}
+		
+		return seq;
 	}
 
 	public static <E> ArraySeq<E> toArraySeq(List<E> elements) {
