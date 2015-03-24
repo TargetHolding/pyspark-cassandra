@@ -14,22 +14,13 @@ limitations under the License.
 
 package pyspark_cassandra.types;
 
-import org.apache.spark.sql.cassandra.CassandraSQLRow;
+import scala.collection.immutable.IndexedSeq;
 
-import scala.collection.IndexedSeq;
+import com.datastax.spark.connector.CassandraRow;
 
-public class CassandraSQLRowPickler extends StructPickler {
-	public String getCreator() {
-		return "pyspark_cassandra.types\n_create_row\n";
-	}
-
+public class CassandraRowUnpickler extends StructUnpickler {
 	@Override
-	public IndexedSeq<String> getFieldNames(Object o) {
-		return ((CassandraSQLRow) o).fieldNames();
-	}
-
-	@Override
-	public IndexedSeq<Object> getFieldValues(Object o) {
-		return ((CassandraSQLRow) o).fieldValues();
+	public Object construct(IndexedSeq<String> fieldNames, IndexedSeq<Object> fieldValues) {
+		return new CassandraRow(fieldNames, fieldValues);
 	}
 }

@@ -30,11 +30,9 @@ import java.util.UUID;
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.custom.Pickler;
 
-import org.apache.spark.sql.cassandra.CassandraSQLRow;
-
 import pyspark_cassandra.types.AsStringPickler;
 import pyspark_cassandra.types.ByteBufferPickler;
-import pyspark_cassandra.types.CassandraSQLRowPickler;
+import pyspark_cassandra.types.CassandraRowPickler;
 import pyspark_cassandra.types.ScalaMapPickler;
 import pyspark_cassandra.types.Types;
 import pyspark_cassandra.types.UDTValuePickler;
@@ -44,6 +42,7 @@ import scala.collection.Seq;
 
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
+import com.datastax.spark.connector.CassandraRow;
 import com.datastax.spark.connector.UDTValue;
 import com.datastax.spark.connector.cql.ColumnDef;
 import com.datastax.spark.connector.cql.TableDef;
@@ -78,7 +77,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 			// the class is there ... but cannot be referenced using its binary name ...
 		}
 
-		Pickler.registerCustomPickler(CassandraSQLRow.class, new CassandraSQLRowPickler());
+		Pickler.registerCustomPickler(CassandraRow.class, new CassandraRowPickler());
 		Pickler.registerCustomPickler(UDTValue.class, new UDTValuePickler());
 	}
 
@@ -221,8 +220,8 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 			return new Object[] { key, value };
 		}
 
-		private CassandraSQLRow readAsRow(Row row, String[] columnNames, ProtocolVersion protocolVersion) {
-			return CassandraSQLRow.fromJavaDriverRow(row, columnNames, protocolVersion);
+		private CassandraRow readAsRow(Row row, String[] columnNames, ProtocolVersion protocolVersion) {
+			return CassandraRow.fromJavaDriverRow(row, columnNames, protocolVersion);
 		}
 
 		private Object readColumn(int idx, Row row, ProtocolVersion protocolVersion) {

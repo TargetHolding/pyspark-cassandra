@@ -21,15 +21,13 @@ import java.util.Map;
 
 import net.razorvine.pickle.PickleException;
 import net.razorvine.pickle.custom.Unpickler;
-
-import org.apache.spark.sql.cassandra.CassandraSQLRow;
-
-import pyspark_cassandra.types.CassandraSQLRowUnpickler;
+import pyspark_cassandra.types.CassandraRowUnpickler;
 import pyspark_cassandra.types.UDTValueUnpickler;
 import pyspark_cassandra.types.UUIDUnpickler;
 import scala.collection.IndexedSeq;
 import scala.collection.Seq;
 
+import com.datastax.spark.connector.CassandraRow;
 import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.writer.RowWriter;
 import com.datastax.spark.connector.writer.RowWriterFactory;
@@ -39,8 +37,8 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 
 	static {
 		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
-		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraSQLRowUnpickler());
-		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", new CassandraSQLRowUnpickler());
+		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraRowUnpickler());
+		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", new CassandraRowUnpickler());
 		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_udt", new UDTValueUnpickler());
 	}
 
@@ -100,7 +98,7 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 					readAsKeyValueTuples((Object[]) row, buffer);
 					break;
 				case ROW:
-					readAsRow((CassandraSQLRow) row, buffer);
+					readAsRow((CassandraRow) row, buffer);
 					break;
 				}
 			} catch (PickleException | IOException e) {
@@ -144,7 +142,7 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 			System.arraycopy(value, 0, buffer, keyLength, Math.min(value.length, buffer.length - keyLength));
 		}
 
-		private void readAsRow(CassandraSQLRow row, Object[] buffer) {
+		private void readAsRow(CassandraRow row, Object[] buffer) {
 			IndexedSeq<String> names = row.fieldNames();
 			IndexedSeq<Object> values = row.fieldValues();
 
@@ -178,8 +176,8 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 			// The detection works because primary keys can't be maps, sets or lists. If the detection still fails, a
 			// user must set the row_format explicitly
 
-			// CassandraSQLRow map to ROW of course
-			if (row instanceof CassandraSQLRow) {
+			// CassandraRow map to ROW of course
+			if (row instanceof CassandraRow) {
 				return RowFormat.ROW;
 			}
 
