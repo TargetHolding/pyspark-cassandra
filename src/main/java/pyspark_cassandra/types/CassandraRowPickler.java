@@ -10,7 +10,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 
 package pyspark_cassandra.types;
 
@@ -25,11 +25,11 @@ public class CassandraRowPickler extends StructPickler {
 
 	@Override
 	public IndexedSeq<String> getFieldNames(Object o) {
-		return ((CassandraRow) o).fieldNames();
+		return ((CassandraRow) o).toMap().keys().toIndexedSeq();
 	}
 
 	@Override
 	public IndexedSeq<Object> getFieldValues(Object o) {
-		return ((CassandraRow) o).fieldValues();
+		return ((CassandraRow) o).toMap().values().toIndexedSeq();
 	}
 }
