@@ -22,7 +22,7 @@ This project was initially forked from https://github.com/Parsely/pyspark-cassan
 Compatibility
 -------------
 
-Currently PySpark Cassandra has been succesfully used with Spark version 1.2.0 and DataStax Spark Cassandra Connector version 1.2. Feedback on (in-)compatibility with other versions is much appreciated.
+Currently PySpark Cassandra has been succesfully used with Spark version 1.2.0 and 1.3.0 and DataStax Spark Cassandra Connector version 1.2. Feedback on (in-)compatibility with other versions is much appreciated.
 
 
 
