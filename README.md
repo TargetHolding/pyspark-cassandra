@@ -48,7 +48,6 @@ Using with PySpark
 ```bash
 spark-submit \
 	--jars /path/to/pyspark_cassandra-<version>.jar \
-	--jars --driver-class-path /path/to/pyspark_cassandra-<version>.jar \
 	--py-files target/pyspark_cassandra_<version>-<python version>.egg \
 	--conf spark.cassandra.connection.host=your,cassandra,node,names \
 	--master spark://spark-master:7077 \
