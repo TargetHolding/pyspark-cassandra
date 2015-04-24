@@ -15,7 +15,6 @@ limitations under the License.
 package pyspark_cassandra.types;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 

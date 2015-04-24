@@ -94,7 +94,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 
 	@Override
 	public RowReaderOptions rowReader$default$2() {
-		return new RowReaderOptions(0);
+		return RowReaderOptions.Default();
 	}
 
 	@Override
