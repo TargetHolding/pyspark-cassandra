@@ -10,3 +10,7 @@ venv
 .project
 .pydevproject
 .settings
+
+#testing
+lib
+.ccm

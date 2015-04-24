@@ -1,4 +1,8 @@
+SHELL = /bin/bash
+
 .PHONY: clean clean-pyc clean-dist dist
+
+
 
 clean: clean-dist clean-pyc
 
@@ -13,6 +17,50 @@ clean-dist:
 	rm -rf src/main/python/build
 	rm -rf src/main/python/*.egg-info
 
+
+
+test: test-python test-java test-integration
+
+test-python:
+
+test-java:
+
+
+
+test-integration: test-integration-setup test-integration-spark-1.2.1 test-integration-spark-1.2.2 test-integration-teardown
+
+test-integration-setup:
+	mkdir -p ./.ccm
+	ccm status --config-dir=./.ccm || ccm create pyspark_test -v 2.1.4 -n 1 -s --config-dir=./.ccm
+
+test-integration-teardown:
+	ccm remove --config-dir=./.ccm
+	
+test-integration-spark-1.2.1:
+	$(call test-integration-for-version,1.2.1)
+
+test-integration-spark-1.2.2:
+	$(call test-integration-for-version,1.2.2)
+
+define test-integration-for-version
+	test -d venv || virtualenv venv
+	source venv/bin/activate
+	pip install cassandra-driver
+		
+	mkdir -p lib && test -d lib/spark-$1-bin-hadoop2.4 || \
+		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-hadoop2.4.tgz | tar xz && popd)
+	
+	PYSPARK_DRIVER_PYTHON=ipython \
+		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
+			--master local[*] \
+			--conf spark.cassandra.connection.host="localhost" \
+			--jars target/pyspark_cassandra-0.1.1.jar \
+			--driver-class-path target/pyspark_cassandra-0.1.1.jar \
+			--py-files target/pyspark_cassandra-0.1.1-py2.7.egg \
+			src/test/python/pyspark_cassandra/it_suite.py
+endef
+
+
 dist: dist-python dist-java
 
 dist-python:
@@ -20,5 +68,6 @@ dist-python:
 
 dist-java:
 	mvn package
+
 
 all: clean dist
