@@ -116,7 +116,6 @@ class SimpleTypesTest(CassandraTestCase):
     # Invalid version for TimeUUID type.
     def test_timeuuid(self):
         uuid = uuid_from_time(datetime(2015, 1, 1))
-        print(uuid)
         self.read_write_test('timeuuid', uuid)
         
     def test_varchar(self):
