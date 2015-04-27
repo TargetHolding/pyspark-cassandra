@@ -59,24 +59,7 @@ public class PickleRowReaderFactory implements RowReaderFactory<byte[]>, Seriali
 		Pickler.registerCustomPickler(Inet4Address.class, new AsStringPickler());
 		Pickler.registerCustomPickler(Inet6Address.class, new AsStringPickler());
 		Pickler.registerCustomPickler(ByteBuffer.class, new ByteBufferPickler());
-		Pickler.registerCustomPickler(MappedByteBuffer.class, new ByteBufferPickler());
-
-		try {
-			Pickler.registerCustomPickler(Class.forName("java.nio.HeapByteBuffer"), new ByteBufferPickler());
-		} catch (ClassNotFoundException e) {
-			// the class is there ... but it's package protected ...
-		}
-
-		Pickler.registerCustomPickler(scala.collection.Map.class, new ScalaMapPickler());
-		Pickler.registerCustomPickler(scala.collection.mutable.Map.class, new ScalaMapPickler());
-		Pickler.registerCustomPickler(scala.collection.immutable.Map.class, new ScalaMapPickler());
-		
-		try {
-			Pickler.registerCustomPickler(Class.forName("scala.collection.immutable.Map$Map1"), new ScalaMapPickler());
-		} catch (ClassNotFoundException e) {
-			// the class is there ... but cannot be referenced using its binary name ...
-		}
-
+		Pickler.registerCustomPickler(scala.collection.AbstractMap.class, new ScalaMapPickler());
 		Pickler.registerCustomPickler(CassandraRow.class, new CassandraRowPickler());
 		Pickler.registerCustomPickler(UDTValue.class, new UDTValuePickler());
 	}
