@@ -47,8 +47,12 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 	public PickleRowWriterFactory(RowFormat format) {
 		this.format = format;
 	}
-
-	@Override
+	
+	public RowWriter<byte[]> rowWriter(TableDef table, Seq<String> columnNames,
+		scala.collection.immutable.Map<String, String> aliasToColumnName) {
+		return this.rowWriter(table, columnNames);
+	}
+		
 	public RowWriter<byte[]> rowWriter(TableDef table, Seq<String> columnNames) {
 		return new PickleRowWriter(columnNames, format);
 	}
