@@ -236,11 +236,16 @@ public class Pickler {
 		}
 		
 		// check registry
-		IObjectPickler custompickler=customPicklers.get(t);
-		if(custompickler!=null) {
-			custompickler.pickle(o, this.out, this);
-			writeMemo(o);
-			return true;
+		Class<?> tt = t;
+		while(tt != null) {
+			IObjectPickler custompickler=customPicklers.get(tt);
+			if(custompickler!=null) {
+				custompickler.pickle(o, this.out, this);
+				writeMemo(o);
+				return true;
+			}
+			
+			tt = tt.getSuperclass();
 		}
 		
 		// more complex types
