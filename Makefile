@@ -42,15 +42,18 @@ test-integration-spark-1.2.1:
 test-integration-spark-1.2.2:
 	$(call test-integration-for-version,1.2.2)
 
+test-integration-spark-1.3.1:
+	$(call test-integration-for-version,1.3.1)
+
 define test-integration-for-version
 	test -d venv || virtualenv venv
-	source venv/bin/activate
-	pip install cassandra-driver
+	venv/bin/pip install cassandra-driver
 		
 	mkdir -p lib && test -d lib/spark-$1-bin-hadoop2.4 || \
 		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-hadoop2.4.tgz | tar xz && popd)
 	
-	PYSPARK_DRIVER_PYTHON=ipython \
+	source venv/bin/activate ; \
+		PYSPARK_DRIVER_PYTHON=ipython \
 		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
 			--master local[*] \
 			--conf spark.cassandra.connection.host="localhost" \
