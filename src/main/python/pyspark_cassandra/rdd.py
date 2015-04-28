@@ -34,7 +34,11 @@ class CassandraRDD(RDD):
 	"""A Resillient Distributed Dataset of Cassandra CQL rows. As any RDD objects of this class are immutable; i.e.
 	operations on this RDD generate a new RDD."""
 	
-	def __init__(self, keyspace, table, ctx, row_format=None, split_size=None, fetch_size=None, consistency_level=None):
+	def __init__(
+			self, keyspace, table, ctx, row_format=None, split_size=None, fetch_size=None,
+			consistency_level=None, metrics_enabled=None
+		):
+		
 		self.keyspace = keyspace
 		self.table = table
 		
@@ -51,10 +55,15 @@ class CassandraRDD(RDD):
 		consistency_level = jvm.ConsistencyLevel.values()[consistency_level] \
 			if consistency_level else ReadConf.DefaultConsistencyLevel()
 		
+		# TODO metrics_enabled = ReadConf.DefaultReadTaskMetricsEnabled() \
+		#	if metrics_enabled is None else metrics_enabled
+		metrics_enabled = False
+		
 		read_conf = ReadConf(
 			split_size,
 			fetch_size,
 			consistency_level,
+			metrics_enabled,
 		)
 		
 		row_format = ctx._jvm.RowFormat.values()[row_format]
@@ -95,9 +104,9 @@ class CassandraRDD(RDD):
 	
 def saveToCassandra(
 		rdd, keyspace=None, table=None, columns=None,
-		batch_size=None, batch_buffer_size=None, batch_level=None,
-		consistency_level=None, parallelism_level=None,
-		ttl=None, timestamp=None, row_format=None
+		batch_size=None, batch_buffer_size=None, batch_grouping_key=None,
+		consistency_level=None, parallelism_level=None, throughput_mibps=None,
+		ttl=None, timestamp=None, metrics_enabled=None, row_format=None
 	):
 	"""
 	Saves an RDD to Cassandra. The RDD is expected to contain dicts with keys mapping to CQL columns.
@@ -120,7 +129,7 @@ def saveToCassandra(
 	@param batch_buffer_size(int):
 		The maximum number of batches which are 'pending'.
 		If None given the default of 1000 is used.
-	@param batch_level(string):
+	@param batch_grouping_key(string):
 		The way batches are formed:
 		* all: any row can be added to any batch
     	* replicaset: rows are batched for replica sets 
@@ -132,6 +141,7 @@ def saveToCassandra(
 	@param parallelism_level(int):
 		The maximum number of batches written in parallel.
 		If None defaults to 8 or spark.cassandra.output.concurrent.writes if set.
+	@param throughput_mibps(int):
 	@param ttl(int or timedelta):
 		The time to live as milliseconds or timedelta to use for the values.
 		If None given no TTL is used.
@@ -168,30 +178,33 @@ def saveToCassandra(
 	# determine the various values for WriteConf
 	# unfortunately the default values in WriteConf can't be used through py4j 
 	batch_size = jvm.BytesInBatch(batch_size or WriteConf.DefaultBatchSizeInBytes())
-	batch_buffer_size = batch_buffer_size or WriteConf.DefaultBatchBufferSize()
-	batch_level = jvm.__getattr__("BatchLevel$").__getattr__("MODULE$").apply(batch_level) \
-		if batch_level else WriteConf.DefaultBatchLevel()
+	batch_buffer_size = batch_buffer_size or WriteConf.DefaultBatchGroupingBufferSize()
+	batch_grouping_key = jvm.__getattr__("BatchGroupingKey$").__getattr__("MODULE$").apply(batch_grouping_key) \
+		if batch_grouping_key else WriteConf.DefaultBatchGroupingKey()
 
 	consistency_level = jvm.ConsistencyLevel.values()[consistency_level] \
 		if consistency_level else WriteConf.DefaultConsistencyLevel()
 
 	parallelism_level = parallelism_level or WriteConf.DefaultParallelismLevel()
+	throughput_mibps = throughput_mibps or WriteConf.DefaultThroughputMiBPS()
 
-	ttl = jvm.__getattr__("TTLOption$").__getattr__("MODULE$").constant(ttl) \
-		if ttl else jvm.__getattr__("TTLOption$auto$").__getattr__("MODULE$")
+	ttl = jvm.TTLOption.constant(ttl) if ttl else jvm.TTLOption.defaultValue()
+	timestamp = jvm.TimestampOption.constant(timestamp) if timestamp else jvm.TimestampOption.defaultValue()
 
-	timestamp = jvm.__getattr__("TimestampOption$").__getattr__("MODULE$").constant(timestamp) \
-		if timestamp else jvm.__getattr__("TimestampOption$auto$").__getattr__("MODULE$")
+	# TODO metrics_enabled = WriteConf.DefaultWriteTaskMetricsEnabled() if metrics_enabled is None else metrics_enabled
+	metrics_enabled = False
 
 	# create the WriteConf object
 	write_conf = WriteConf(
 		batch_size,
 		batch_buffer_size,
-		batch_level,
+		batch_grouping_key,
 		consistency_level,
 		parallelism_level,
+		throughput_mibps,
 		ttl,
-		timestamp
+		timestamp,
+		metrics_enabled
 	)
 	
 	# determine the row format

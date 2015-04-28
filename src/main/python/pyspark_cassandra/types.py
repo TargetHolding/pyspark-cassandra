@@ -33,6 +33,9 @@ class Struct(tuple):
 	def __dict__(self):
 		return self.__FIELDS__
 	
+	def __iter__(self):
+		return iter(self.__FIELDS__.values())
+	
 	def keys(self):
 		return self.__FIELDS__.keys()
 

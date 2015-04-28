@@ -27,7 +27,13 @@ test-java:
 
 
 
-test-integration: test-integration-setup test-integration-spark-1.2.1 test-integration-spark-1.2.2 test-integration-teardown
+test-integration: \
+	test-integration-setup \
+	test-integration-spark-1.2.1 \
+	test-integration-spark-1.2.2 \
+	test-integration-spark-1.3.0 \
+	test-integration-spark-1.3.1 \
+	test-integration-teardown
 
 test-integration-setup:
 	mkdir -p ./.ccm
@@ -42,6 +48,9 @@ test-integration-spark-1.2.1:
 test-integration-spark-1.2.2:
 	$(call test-integration-for-version,1.2.2)
 
+test-integration-spark-1.3.0:
+	$(call test-integration-for-version,1.3.0)
+
 test-integration-spark-1.3.1:
 	$(call test-integration-for-version,1.3.1)
 
@@ -53,13 +62,12 @@ define test-integration-for-version
 		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-hadoop2.4.tgz | tar xz && popd)
 	
 	source venv/bin/activate ; \
-		PYSPARK_DRIVER_PYTHON=ipython \
 		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
 			--master local[*] \
 			--conf spark.cassandra.connection.host="localhost" \
-			--jars target/pyspark_cassandra-0.1.1.jar \
-			--driver-class-path target/pyspark_cassandra-0.1.1.jar \
-			--py-files target/pyspark_cassandra-0.1.1-py2.7.egg \
+			--jars target/pyspark_cassandra-0.1.3.jar \
+			--driver-class-path target/pyspark_cassandra-0.1.3.jar \
+			--py-files target/pyspark_cassandra-0.1.3-py2.7.egg \
 			src/test/python/pyspark_cassandra/it_suite.py
 endef
 

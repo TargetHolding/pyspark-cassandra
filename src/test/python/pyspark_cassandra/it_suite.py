@@ -184,17 +184,6 @@ class CollectionTypesTest(CassandraTestCase):
 if __name__ == '__main__':
     unittest.main()
 
-#
-#
-# session.execute('''
-#     CREATE TABLE IF NOT EXISTS collection_types (
-#         key text primary key,
-#         m map<text, int>,
-#         s set<text>,
-#         l list<text>
-#     )
-# ''')
-#
 # session.execute('''
 #     CREATE TABLE IF NOT EXISTS counter (
 #         key text primary key,
