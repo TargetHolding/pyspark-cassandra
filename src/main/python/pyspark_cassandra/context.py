@@ -17,8 +17,7 @@ import pyspark.context
 from pyspark_cassandra.rdd import CassandraRDD
 
 
-def convert(sc):
-	sc.__class__ = CassandraSparkContext
+def monkey_patch_sc(sc):
 	sc.__dict__["cassandraTable"] = partial(CassandraSparkContext.cassandraTable, sc)
 	sc.__dict__["cassandraTable"].__doc__ = CassandraSparkContext.cassandraTable.__doc__
 	_init_cassandra_spark_context(sc)
