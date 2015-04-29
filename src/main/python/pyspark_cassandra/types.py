@@ -64,6 +64,12 @@ class Struct(tuple):
 			tuple.__setattr__(self, name, value)
 		else:
 			self.__FIELDS__[name] = value
+
+	def __delattr__(self, name):
+		try:
+			del self.__FIELDS__[name]
+		except KeyError:
+			raise AttributeError(name)
 		
 	
 	def __getstate__(self):
