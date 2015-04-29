@@ -58,8 +58,6 @@ class CassandraSparkContext(pyspark.context.SparkContext):
 		super(CassandraSparkContext, self)._do_init(*args, **kwargs)
 		_init_cassandra_spark_context(self)
 
-	def cassandraTable(self, keyspace, table, row_format=None,
-					split_size=None, fetch_size=None, consistency_level=None):
+	def cassandraTable(self, keyspace, table, row_format=None, read_conf=None):
 		"""Returns a CassandraRDD for the given keyspace and table"""
-		return CassandraRDD(keyspace, table, self, row_format,
-						split_size, fetch_size, consistency_level)
+		return CassandraRDD(keyspace, table, self, row_format, read_conf)

@@ -21,13 +21,20 @@ import pyspark.context
 import pyspark.rdd
 import pyspark_cassandra.context
 
+from .conf import WriteConf
 from .context import CassandraSparkContext, monkey_patch_sc
 from .rdd import CassandraRDD, saveToCassandra, RowFormat
 from .types import Row, UDT
 
 
 __all__ = [
-    "CassandraSparkContext", "CassandraRDD", "RowFormat", "Row", "UDT"
+    "CassandraSparkContext",
+    "CassandraRDD",
+    "ReadConf",
+    "Row",
+    "RowFormat",
+    "UDT",
+    "WriteConf"
 ]
 
 

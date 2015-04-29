@@ -9,7 +9,7 @@ from cassandra.cluster import Cluster
 from cassandra.util import uuid_from_time
 
 from pyspark import SparkConf
-from pyspark_cassandra import CassandraSparkContext, RowFormat, Row, UDT
+from pyspark_cassandra import CassandraSparkContext, RowFormat, Row, UDT, WriteConf
 
 
 class CassandraTestCase(unittest.TestCase):
