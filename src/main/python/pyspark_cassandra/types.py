@@ -36,6 +36,10 @@ class Struct(tuple):
 	def __iter__(self):
 		return iter(self.__FIELDS__.values())
 	
+	@property
+	def _fields(self):
+		return self.keys()
+	
 	def keys(self):
 		return self.__FIELDS__.keys()
 
