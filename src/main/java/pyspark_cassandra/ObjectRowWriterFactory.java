@@ -14,16 +14,9 @@ limitations under the License.
 
 package pyspark_cassandra;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 
-import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.custom.Unpickler;
-import pyspark_cassandra.types.CassandraRowUnpickler;
-import pyspark_cassandra.types.UDTValueUnpickler;
-import pyspark_cassandra.types.UUIDUnpickler;
 import scala.collection.IndexedSeq;
 import scala.collection.Seq;
 
@@ -32,39 +25,31 @@ import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.writer.RowWriter;
 import com.datastax.spark.connector.writer.RowWriterFactory;
 
-public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Serializable {
+public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Serializable {
 	private static final long serialVersionUID = 1L;
-
-	static {
-		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
-		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraRowUnpickler());
-		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", new CassandraRowUnpickler());
-		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_udt", new UDTValueUnpickler());
-	}
 
 	private RowFormat format;
 
-	public PickleRowWriterFactory(RowFormat format) {
+	public ObjectRowWriterFactory(RowFormat format) {
 		this.format = format;
 	}
-	
-	public RowWriter<byte[]> rowWriter(TableDef table, Seq<String> columnNames,
-		scala.collection.immutable.Map<String, String> aliasToColumnName) {
+
+	public RowWriter<Object> rowWriter(TableDef table, Seq<String> columnNames,
+			scala.collection.immutable.Map<String, String> aliasToColumnName) {
 		return this.rowWriter(table, columnNames);
 	}
-		
-	public RowWriter<byte[]> rowWriter(TableDef table, Seq<String> columnNames) {
-		return new PickleRowWriter(columnNames, format);
+
+	public RowWriter<Object> rowWriter(TableDef table, Seq<String> columnNames) {
+		return new ObjectRowWriter(columnNames, format);
 	}
 
-	private final class PickleRowWriter implements RowWriter<byte[]> {
+	private final class ObjectRowWriter implements RowWriter<Object> {
 		private static final long serialVersionUID = 1L;
 
-		private transient Unpickler unpickler;
 		private Seq<String> columnNames;
 		private RowFormat format;
 
-		public PickleRowWriter(Seq<String> columnNames, RowFormat format) {
+		public ObjectRowWriter(Seq<String> columnNames, RowFormat format) {
 			this.columnNames = columnNames;
 			this.format = format;
 		}
@@ -75,39 +60,28 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 		}
 
 		@Override
-		public void readColumnValues(byte[] pickledRow, Object[] buffer) {
-			if (this.unpickler == null) {
-				this.unpickler = new Unpickler();
+		public void readColumnValues(Object pickledRow, Object[] buffer) {
+			RowFormat format = this.format;
+			if (format == null) {
+				format = this.detectFormat(pickledRow);
 			}
 
-			try {
-				Object row = unpickle(pickledRow);
-
-				RowFormat format = this.format;
-				if (format == null) {
-					format = this.detectFormat(row);
-				}
-
-				switch (format) {
-				case DICT:
-					readAsDict((Map<?, ?>) row, buffer);
-					break;
-				case TUPLE:
-					readAsTuple((Object[]) row, buffer);
-					break;
-				case KV_DICTS:
-					readAsKeyValueDicts((Object[]) row, buffer);
-					break;
-				case KV_TUPLES:
-					readAsKeyValueTuples((Object[]) row, buffer);
-					break;
-				case ROW:
-					readAsRow((CassandraRow) row, buffer);
-					break;
-				}
-			} catch (PickleException | IOException e) {
-				// TODO Auto-generated catch block
-				throw new RuntimeException(e);
+			switch (format) {
+			case DICT:
+				readAsDict((Map<?, ?>) pickledRow, buffer);
+				break;
+			case TUPLE:
+				readAsTuple((Object[]) pickledRow, buffer);
+				break;
+			case KV_DICTS:
+				readAsKeyValueDicts((Object[]) pickledRow, buffer);
+				break;
+			case KV_TUPLES:
+				readAsKeyValueTuples((Object[]) pickledRow, buffer);
+				break;
+			case ROW:
+				readAsRow((CassandraRow) pickledRow, buffer);
+				break;
 			}
 		}
 
@@ -155,24 +129,6 @@ public class PickleRowWriterFactory implements RowWriterFactory<byte[]>, Seriali
 				if (idx >= 0) {
 					buffer[idx] = values.apply(i);
 				}
-			}
-		}
-
-		private Object unpickle(byte[] pickledRow) throws IOException {
-			Object unpickled = unpickler.loads(pickledRow);
-
-			if (unpickled instanceof List) {
-				List<?> list = (List<?>) unpickled;
-
-				// TODO proper exceptions
-				if (list.size() > 1) {
-					throw new RuntimeException(
-							"Can't write a list of rows in one go ... must be a dict, tuple or row object!");
-				}
-
-				return list.get(0);
-			} else {
-				return unpickled;
 			}
 		}
 

@@ -9,10 +9,9 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -294,14 +293,16 @@ public class Pickler {
 			put_map((Map<?,?>)o);
 			return true;
 		}
-		if(o instanceof List<?>) {
-			put_collection((List<?>)o);
+		
+		if(o instanceof Iterable<?>) {
+			put_iterator(((Iterable<?>)o).iterator());
 			return true;
 		}
-		if(o instanceof Collection<?>) {
-			put_collection((Collection<?>)o);
+		if(o instanceof Iterator<?>) {
+			put_iterator((Iterator<?>) o);
 			return true;
 		}
+		
 		// javabean		
 		if(o instanceof java.io.Serializable ) {
 			put_javabean(o);
@@ -311,12 +312,12 @@ public class Pickler {
 		return false;
 	}
 
-	void put_collection(Collection<?> list) throws IOException {
+	void put_iterator(Iterator<?> iterator) throws IOException {
 		out.write(Opcodes.EMPTY_LIST);
-		writeMemo(list);
+		writeMemo(iterator);
 		out.write(Opcodes.MARK);
-		for(Object o: list) {
-			save(o);
+		while(iterator.hasNext()){
+			save(iterator.next());
 		}
 		out.write(Opcodes.APPENDS);
 	}

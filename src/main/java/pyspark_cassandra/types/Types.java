@@ -10,21 +10,51 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+ */
 
 package pyspark_cassandra.types;
 
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
+import net.razorvine.pickle.custom.Pickler;
+import net.razorvine.pickle.custom.Unpickler;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.Map;
 import scala.collection.Seq;
 import scala.collection.mutable.ArraySeq;
 
+import com.datastax.spark.connector.CassandraRow;
+import com.datastax.spark.connector.UDTValue;
+
 public class Types {
+	static {
+		registerCustomTypes();
+	}
+
+	public static void registerCustomTypes() {
+		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
+		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraRowUnpickler());
+		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", new CassandraRowUnpickler());
+		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_udt", new UDTValueUnpickler());
+
+		Pickler.registerCustomPickler(UUID.class, new UUIDPickler());
+		Pickler.registerCustomPickler(InetAddress.class, new AsStringPickler());
+		Pickler.registerCustomPickler(Inet4Address.class, new AsStringPickler());
+		Pickler.registerCustomPickler(Inet6Address.class, new AsStringPickler());
+		Pickler.registerCustomPickler(ByteBuffer.class, new ByteBufferPickler());
+		Pickler.registerCustomPickler(scala.collection.AbstractMap.class, new ScalaMapPickler());
+		Pickler.registerCustomPickler(CassandraRow.class, new CassandraRowPickler());
+		Pickler.registerCustomPickler(UDTValue.class, new UDTValuePickler());
+	}
+
 	public static <T> List<T> toJavaList(T[] arr) {
 		List<T> list = new ArrayList<T>(arr.length);
 
@@ -58,21 +88,21 @@ public class Types {
 
 	public static <E> ArraySeq<E> toArraySeq(E[] elements) {
 		ArraySeq<E> seq = new ArraySeq<E>(elements.length);
-		
+
 		for (int i = 0; i < elements.length; i++) {
 			seq.update(i, elements[i]);
 		}
-		
+
 		return seq;
 	}
 
 	public static <E> ArraySeq<E> toArraySeq(List<E> elements) {
 		ArraySeq<E> seq = new ArraySeq<E>(elements.size());
-		
+
 		for (int i = 0; i < elements.size(); i++) {
 			seq.update(i, elements.get(i));
 		}
-		
+
 		return seq;
 	}
 }
