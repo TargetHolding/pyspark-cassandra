@@ -30,19 +30,22 @@ class RowFormat(object):
 	
 	values = (DICT, TUPLE, KV_DICTS, KV_TUPLES, ROW)
 
-
-# class OneByOneSerializer(Serializer):
-# 	def dump_stream(self, iterator, stream):
-# 		"""
-# 		Serialize an iterator of objects to the output stream.
-# 		"""
-# 		raise NotImplementedError
-# 
-# 	def load_stream(self, stream):
-# 		"""
-# 		Return an iterator of deserialized objects from the input stream.
-# 		"""
-# 		raise NotImplementedError
+	@classmethod
+	def get_reader_factory(cls, jvm, row_format):
+		if not row_format:
+			return jvm.CassandraRowReaderFactory()
+		elif row_format < 0 or row_format >= len(RowFormat.values):
+			raise ValueError("invalid row_format %s" % row_format)
+		elif row_format == RowFormat.ROW:
+			return jvm.CassandraRowReaderFactory()
+		elif row_format == RowFormat.TUPLE:
+			return jvm.TupleRowReaderFactory()
+		elif row_format == RowFormat.DICT:
+			return jvm.DictRowReaderFactory()
+		elif row_format == RowFormat.KV_TUPLES:
+			return jvm.KVTuplesRowReaderFactory()
+		elif row_format == RowFormat.KV_DICTS:
+			return jvm.KVDictsRowReaderFactory()
 
 
 class CassandraRDD(RDD):
@@ -55,20 +58,8 @@ class CassandraRDD(RDD):
 		self.keyspace = keyspace
 		self.table = table
 		
-		if not row_format:
-			reader_factory = ctx._jvm.CassandraRowReaderFactory()
-		elif row_format < 0 or row_format >= len(RowFormat.values):
-			raise ValueError("invalid row_format %s" % row_format)
-		elif row_format == RowFormat.ROW:
-			reader_factory = ctx._jvm.CassandraRowReaderFactory()
-		elif row_format == RowFormat.TUPLE:
-			reader_factory = ctx._jvm.TupleRowReaderFactory()
-		elif row_format == RowFormat.DICT:
-			reader_factory = ctx._jvm.DictRowReaderFactory()
-		elif row_format == RowFormat.KV_TUPLES:
-			reader_factory = ctx._jvm.KVTuplesRowReaderFactory()
-		elif row_format == RowFormat.KV_DICTS:
-			reader_factory = ctx._jvm.KVDictsRowReaderFactory()
+		# determine which reader factory to use
+		reader_factory = RowFormat.get_reader_factory(ctx._jvm, row_format)
 					
 		# build the CassandraRDD
 		self._cjrdd = (
@@ -146,25 +137,29 @@ def saveToCassandra(rdd, keyspace=None, table=None, columns=None, write_conf=Non
 	if not table:
 		raise ValueError("table not set")
 
-	# determine the row format
-	row_format = rdd.ctx._jvm.RowFormat.values()[row_format] if row_format else None
+	# use the JVM view from the RDD's context
+	jvm = rdd.ctx._jvm
 
-	# 	builder = rdd._reserialize(BatchedSerializer()) \
-	# 		.ctx._jvm.CassandraJavaUtil.javaFunctions(rdd._jrdd) \
-	# 		.writerBuilder(keyspace, table, rdd.ctx._jvm.PickleRowWriterFactory(row_format))
+	# determine the row format
+	row_format = jvm.RowFormat.values()[row_format] if row_format else None
 
 	# unpickle the batches in the JVM
-	unpickled = rdd._jrdd.flatMap(rdd.ctx._jvm.BatchUnpickle())
+	unpickled = rdd._jrdd.flatMap(jvm.BatchUnpickle())
 
-	# create a builder for saving to cassandra
-	builder = rdd.ctx._jvm \
+	# create a builder for saving to Cassandra
+	builder = jvm \
 		.CassandraJavaUtil.javaFunctions(unpickled) \
-		.writerBuilder(keyspace, table, rdd.ctx._jvm.ObjectRowWriterFactory(row_format))
+		.writerBuilder(keyspace, table, jvm.ObjectRowWriterFactory(row_format))
 	
 	# set the write config if given
 	# TODO this can be optional, but we set the metrics_enabled to a different default than the Spark Cassandra
 	# Connector, so we construct a default if none given.
 	builder = builder.withWriteConf((write_conf or WriteConf(rdd.ctx)).to_java_conf())
+
+	# narrow column selection if required
+	if columns:
+		columns = jvm.CassandraJavaUtil.someColumns(str(c) for c in columns)
+		builder = builder.withColumnSelector(columns)
 	
 	# perform the actual saveToCassandra	
 	builder.saveToCassandra()
