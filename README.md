@@ -158,6 +158,10 @@ A `CassandraRDD` is very similar to a regular `RDD` in pyspark. It is extended w
 * ``saveToCassandra(...)``: As above, but the keyspace and/or table __may__ be omitted to save to the same keyspace and/or table. 
 
 
+### pyspark_cassandra.streaming
+
+When importing pyspark_cassandra.streaming the method ``saveToCassandra(...)``` is made available on DStreams.
+
 
 Examples
 --------
@@ -207,6 +211,24 @@ rdd.saveToCassandra(
 	"table",
 	ttl=timedelta(hours=1),
 )
+```
+
+Create a streaming context, convert every line to a generater of words which are saved to cassandra. Through this example all unique words are stored in Cassandra.
+
+The words are wrapped as a tuple so that they are in a format which can be stored. A dict or a pyspark_cassandra.Row object would have worked as well.
+
+```python
+from pyspark.streaming import StreamingContext
+from pyspark_cassandra import streaming
+
+ssc = StreamingContext(sc, 2)
+
+ssc \
+    .socketTextStream("localhost", 9999) \
+    .flatMap(lambda l: ((w,) for w in (l,))) \
+    .saveToCassandra('keyspace', 'words')
+
+ssc.start()
 ```
 
 
