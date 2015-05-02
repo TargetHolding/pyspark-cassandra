@@ -1,6 +1,7 @@
 from py4j.java_gateway import java_import
-
+from pyspark.streaming.dstream import DStream
 from pyspark_cassandra.conf import WriteConf
+from pyspark_cassandra.rdd import RowFormat
 
 
 def saveToCassandra(dstream, keyspace, table, columns=None, write_conf=None, row_format=None):
@@ -14,7 +15,7 @@ def saveToCassandra(dstream, keyspace, table, columns=None, write_conf=None, row
     except Exception as e:
         raise ImportError("Java module pyspark_cassandra not found (%s)" % e)
     
-    row_format = jvm.RowFormat.values()[row_format]
+    row_format = jvm.RowFormat.values()[row_format] if row_format else None
     writer_factory = jvm.ObjectRowWriterFactory(row_format)
 
     builder = jvm.CassandraStreamingJavaUtil.javaFunctions(
@@ -30,3 +31,6 @@ def saveToCassandra(dstream, keyspace, table, columns=None, write_conf=None, row
         builder = builder.withColumnSelector(columns)
 
     builder.saveToCassandra()
+
+# Monkey patch the default python DStream so that data in it can be stored to Cassandra as CQL rows
+DStream.saveToCassandra = saveToCassandra
