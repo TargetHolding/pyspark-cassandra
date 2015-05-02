@@ -60,27 +60,27 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 		}
 
 		@Override
-		public void readColumnValues(Object pickledRow, Object[] buffer) {
+		public void readColumnValues(Object row, Object[] buffer) {
 			RowFormat format = this.format;
 			if (format == null) {
-				format = this.detectFormat(pickledRow);
+				this.format = this.detectFormat(row);
 			}
-
-			switch (format) {
+			
+			switch (this.format) {
 			case DICT:
-				readAsDict((Map<?, ?>) pickledRow, buffer);
+				readAsDict((Map<?, ?>) row, buffer);
 				break;
 			case TUPLE:
-				readAsTuple((Object[]) pickledRow, buffer);
+				readAsTuple((Object[]) row, buffer);
 				break;
 			case KV_DICTS:
-				readAsKeyValueDicts((Object[]) pickledRow, buffer);
+				readAsKeyValueDicts((Object[]) row, buffer);
 				break;
 			case KV_TUPLES:
-				readAsKeyValueTuples((Object[]) pickledRow, buffer);
+				readAsKeyValueTuples((Object[]) row, buffer);
 				break;
 			case ROW:
-				readAsRow((CassandraRow) pickledRow, buffer);
+				readAsRow((CassandraRow) row, buffer);
 				break;
 			}
 		}
