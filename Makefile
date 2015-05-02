@@ -65,9 +65,8 @@ define test-integration-for-version
 		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
 			--master local[*] \
 			--conf spark.cassandra.connection.host="localhost" \
-			--jars target/pyspark_cassandra-0.1.3.jar \
-			--driver-class-path target/pyspark_cassandra-0.1.3.jar \
-			--py-files target/pyspark_cassandra-0.1.3-py2.7.egg \
+			--jars target/pyspark_cassandra-0.1.4.jar \
+			--py-files target/pyspark_cassandra-0.1.4-py2.7.egg \
 			src/test/python/pyspark_cassandra/it_suite.py
 endef
 
@@ -75,7 +74,7 @@ endef
 dist: dist-python dist-java
 
 dist-python:
-	src/main/python/setup.py bdist_egg -d ../../../target
+	python/setup.py bdist_egg -d ../target
 
 dist-java:
 	mvn package

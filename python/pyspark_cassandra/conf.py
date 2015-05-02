@@ -64,67 +64,21 @@ class WriteConf(object):
             @param metrics_enabled(bool):
                 Whether to enable task metrics updates.
         '''
-        self.jvm = sc._jvm
-        
         self.batch_size = batch_size
         self.batch_buffer_size = batch_buffer_size
         self.batch_grouping_key = batch_grouping_key
         self.consistency_level = consistency_level
         self.parallelism_level = parallelism_level
         self.throughput_mibps = throughput_mibps
+
+        # convert time delta in ttl in seconds        
+        if ttl and isinstance(ttl, timedelta):
+            ttl = int(self.ttl.total_seconds())
         self.ttl = ttl
-        self.timestamp = timestamp
-        self.metrics_enabled = metrics_enabled
-    
-    
-    def to_java_conf(self):
-        ''' create the com.datastax.spark.connector.writer.WriteConf JVM object'''
-    
-        # determine the various values for WriteConf
-        # unfortunately the default values in WriteConf can't be used through py4j 
-        batch_size = self.jvm.BytesInBatch(self.batch_size or self.jvm.WriteConf.DefaultBatchSizeInBytes())
-        batch_buffer_size = self.batch_buffer_size or self.jvm.WriteConf.DefaultBatchGroupingBufferSize()
-        batch_grouping_key = self.jvm.__getattr__("BatchGroupingKey$").__getattr__("MODULE$").apply(self.batch_grouping_key) \
-            if self.batch_grouping_key else self.jvm.WriteConf.DefaultBatchGroupingKey()
-    
-        consistency_level = self.jvm.ConsistencyLevel.values()[self.consistency_level] \
-            if self.consistency_level else self.jvm.WriteConf.DefaultConsistencyLevel()
-    
-        parallelism_level = self.parallelism_level or self.jvm.WriteConf.DefaultParallelismLevel()
-        throughput_mibps = self.throughput_mibps or self.jvm.WriteConf.DefaultThroughputMiBPS()
-    
-        # convert timedelta ttl to milliseconds
-        if not self.ttl:
-            ttl = self.jvm.TTLOption.defaultValue()
-        elif isinstance(self.ttl, timedelta):
-            ttl = self.jvm.TTLOption.constant(int(self.ttl.total_seconds() * 1000))
-        else:
-            ttl = self.jvm.TTLOption.constant(ttl)
-
+        
         # convert date or datetime objects to a timestamp in milliseconds since the UNIX epoch
-        if not self.timestamp:
-            timestamp = self.jvm.TimestampOption.defaultValue()
-        elif isinstance(timestamp, datetime) or isinstance(timestamp, date):
-            timestamp = self.jvm.TimestampOption.constant(
-                int((timestamp - timestamp.__class__(1970, 1, 1)).total_seconds() * 1000)
-            )
-        else:
-            timestamp = self.jvm.TimestampOption.constant(timestamp)
-    
-        # TODO metrics_enabled = self.jvm.WriteConf.DefaultWriteTaskMetricsEnabled() \
-        # if metrics_enabled is None else metrics_enabled
-        metrics_enabled = False if self.metrics_enabled is None else self.metrics_enabled 
+        if timestamp and (isinstance(timestamp, datetime) or isinstance(timestamp, date)):
+            timestamp = int((timestamp - timestamp.__class__(1970, 1, 1)).total_seconds() * 1000)
+        self.timestamp = timestamp
         
-        return self.jvm.WriteConf(
-            batch_size,
-            batch_buffer_size,
-            batch_grouping_key,
-            consistency_level,
-            parallelism_level,
-            throughput_mibps,
-            ttl,
-            timestamp,
-            metrics_enabled
-        )
-        
-
+        self.metrics_enabled = metrics_enabled

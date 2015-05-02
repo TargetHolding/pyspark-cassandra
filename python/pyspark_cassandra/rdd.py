@@ -15,7 +15,7 @@ from datetime import timedelta, datetime, date
 
 from pyspark.rdd import RDD
 from pyspark.serializers import BatchedSerializer, PickleSerializer
-from pyspark_cassandra.types import as_java_array
+from pyspark_cassandra.types import as_java_array, as_java_object
 from pyspark_cassandra.conf import WriteConf, ReadConf
 
 
@@ -30,23 +30,6 @@ class RowFormat(object):
 	
 	values = (DICT, TUPLE, KV_DICTS, KV_TUPLES, ROW)
 
-	@classmethod
-	def get_reader_factory(cls, jvm, row_format):
-		if not row_format:
-			return jvm.CassandraRowReaderFactory()
-		elif row_format < 0 or row_format >= len(RowFormat.values):
-			raise ValueError("invalid row_format %s" % row_format)
-		elif row_format == RowFormat.ROW:
-			return jvm.CassandraRowReaderFactory()
-		elif row_format == RowFormat.TUPLE:
-			return jvm.TupleRowReaderFactory()
-		elif row_format == RowFormat.DICT:
-			return jvm.DictRowReaderFactory()
-		elif row_format == RowFormat.KV_TUPLES:
-			return jvm.KVTuplesRowReaderFactory()
-		elif row_format == RowFormat.KV_DICTS:
-			return jvm.KVDictsRowReaderFactory()
-
 
 class CassandraRDD(RDD):
 	'''
@@ -55,23 +38,36 @@ class CassandraRDD(RDD):
 	'''
 	
 	def __init__(self, keyspace, table, ctx, row_format=None, read_conf=None):
+		if not keyspace:
+			raise ValueError("keyspace not set")
+		
+		if not table:
+			raise ValueError("table not set")
+		
+		if not row_format:
+			row_format = RowFormat.ROW
+		elif row_format < 0 or row_format >= len(RowFormat.values):
+			raise ValueError("invalid row_format %s" % row_format)
+		
 		self.keyspace = keyspace
 		self.table = table
 		
-		# determine which reader factory to use
-		reader_factory = RowFormat.get_reader_factory(ctx._jvm, row_format)
-					
-		# build the CassandraRDD
-		self._cjrdd = (
-			ctx._cjcs
-				.cassandraTable(keyspace, table, reader_factory)
-				.withReadConf((read_conf or ReadConf(ctx)).to_java_conf())
-		)
+		read_conf = as_java_object(ctx._gateway, read_conf.__dict__) if read_conf else None
 		
-		# The CassandraRDD is batch pickled by mapping each partition (more efficient then one by one)
-		# This requires memorizing the CassandraRDD because select and where only operate on that RDD
-		# and not on a JavaRDD which is returned by mapPartitions
-		jrdd = self._cjrdd.mapPartitions(ctx._jvm.BatchPickle(), False)
+		self._helper = ctx._jvm.java.lang.Thread.currentThread().getContextClassLoader() \
+			.loadClass("pyspark_cassandra.PythonHelper").newInstance()
+		
+		self._cjrdd = self._helper \
+			.cassandraTable(
+				keyspace,
+				table,
+				ctx._jsc,
+				read_conf,
+				row_format,
+			)
+			
+		jrdd = self._helper.pickledPartitions(self._cjrdd)
+		
 		super(CassandraRDD, self).__init__(jrdd, ctx)
 
 
@@ -81,7 +77,7 @@ class CassandraRDD(RDD):
 		columns = as_java_array(self.ctx._gateway, "String", (str(c) for c in columns))
 		new = copy(self)
 		new._cjrdd = new._cjrdd.select(columns)
-		new.jrdd = new._cjrdd.mapPartitions(self.ctx._jvm.BatchPickle(), False)
+		new.jrdd = self._helper.pickledPartitions(self._cjrdd)
 		return new
 
 
@@ -94,7 +90,7 @@ class CassandraRDD(RDD):
 		args = as_java_array(self.ctx._gateway, "Object", args)
 		new = copy(self)
 		new._cjrdd = new._cjrdd.where(clause, args)
-		new.jrdd = new._cjrdd.mapPartitions(self.ctx._jvm.BatchPickle(), False)
+		new.jrdd = self._helper.pickledPartitions(self._cjrdd)
 		return new
 	
 	def __copy__(self):
@@ -129,38 +125,29 @@ def saveToCassandra(rdd, keyspace=None, table=None, columns=None, write_conf=Non
 	'''
 	
 	keyspace = keyspace or rdd.keyspace
-	table = table or rdd.table
-	
 	if not keyspace:
 		raise ValueError("keyspace not set")
 	
+	table = table or rdd.table
 	if not table:
 		raise ValueError("table not set")
-
-	# use the JVM view from the RDD's context
-	jvm = rdd.ctx._jvm
-
-	# determine the row format
-	row_format = jvm.RowFormat.values()[row_format] if row_format else None
-
-	# unpickle the batches in the JVM
-	unpickled = rdd._jrdd.flatMap(jvm.BatchUnpickle())
-
-	# create a builder for saving to Cassandra
-	builder = jvm \
-		.CassandraJavaUtil.javaFunctions(unpickled) \
-		.writerBuilder(keyspace, table, jvm.ObjectRowWriterFactory(row_format))
 	
-	# set the write config if given
-	# TODO this can be optional, but we set the metrics_enabled to a different default than the Spark Cassandra
-	# Connector, so we construct a default if none given.
-	builder = builder.withWriteConf((write_conf or WriteConf(rdd.ctx)).to_java_conf())
+	# create write config as map and convert the columns to a string array
+	write_conf = as_java_object(rdd.ctx._gateway, write_conf.__dict__) if write_conf else None
+	columns = as_java_array(rdd.ctx._gateway, "String", columns) if columns else None
 
-	# narrow column selection if required
-	if columns:
-		columns = jvm.CassandraJavaUtil.someColumns(str(c) for c in columns)
-		builder = builder.withColumnSelector(columns)
-	
-	# perform the actual saveToCassandra	
-	builder.saveToCassandra()
+	# create a helper object
+	helper = rdd.ctx._jvm.java.lang.Thread.currentThread().getContextClassLoader() \
+		.loadClass("pyspark_cassandra.PythonHelper").newInstance()
+		
+	# delegate to helper
+	helper \
+		.saveToCassandra(
+			rdd._jrdd,
+			keyspace,
+			table,
+			columns,
+			write_conf,
+			row_format
+		)
 

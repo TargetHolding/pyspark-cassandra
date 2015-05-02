@@ -138,11 +138,6 @@ def as_java_object(gateway, obj):
 		timestamp = int(mktime(obj.timetuple()) * 1000)
 		return gateway.jvm.java.util.Date(timestamp)
 	
-	elif issubclass(t, (list, Iterable)):
-		array_list = gateway.jvm.java.util.ArrayList()
-		for e in obj: array_list.append(e)
-		return array_list
-	
 	elif issubclass(t, (dict, Mapping)):
 		hash_map = gateway.jvm.java.util.HashMap()
 		for (k, v) in obj.items(): hash_map[k] = v
@@ -152,6 +147,11 @@ def as_java_object(gateway, obj):
 		hash_set = gateway.jvm.java.util.HashSet()
 		for e in obj: hash_set.add(e)
 		return hash_set
+	
+	elif issubclass(t, (list, Iterable)):
+		array_list = gateway.jvm.java.util.ArrayList()
+		for e in obj: array_list.append(e)
+		return array_list
 	
 	else:
 		return obj

@@ -12,7 +12,6 @@
 
 from functools import partial
 
-from py4j.java_gateway import java_import
 import pyspark.context
 from pyspark_cassandra.rdd import CassandraRDD
 
@@ -21,37 +20,6 @@ def monkey_patch_sc(sc):
 	sc.__class__ = CassandraSparkContext
 	sc.__dict__["cassandraTable"] = partial(CassandraSparkContext.cassandraTable, sc)
 	sc.__dict__["cassandraTable"].__doc__ = CassandraSparkContext.cassandraTable.__doc__
-	_init_cassandra_spark_context(sc)
-
-
-def _init_cassandra_spark_context(sc):
-	jvm = sc._jvm
-
-	try:
-		jvm.Class.forName("pyspark_cassandra.RowFormat")
-		java_import(jvm, "pyspark_cassandra.*")
-		java_import(jvm, "pyspark_cassandra.pickling.*")
-		java_import(jvm, "pyspark_cassandra.readers.*")
-	except:
-		raise ImportError("Java module pyspark_cassandra not found")	
-
-	try:
-		jvm.Class.forName("com.datastax.driver.core.Cluster")
-		java_import(jvm, "com.datastax.driver.core.*")
-	except:
-		raise ImportError("Java module com.datastax.driver.core not found")
-
-	try:
-		jvm.Class.forName("com.datastax.spark.connector.RDDFunctions")
-		java_import(jvm, "com.datastax.spark.connector.*")
-		java_import(jvm, "com.datastax.spark.connector.japi.CassandraJavaUtil")
-		java_import(jvm, "com.datastax.spark.connector.rdd.*")
-		java_import(jvm, "com.datastax.spark.connector.writer.*")
-	except:
-		raise ImportError("Java module com.datastax.spark.connector not found")
-	
-	sc._cjcs = jvm.CassandraJavaUtil.javaFunctions(sc._jsc)
-
 
 
 class CassandraSparkContext(pyspark.context.SparkContext):
@@ -59,7 +27,7 @@ class CassandraSparkContext(pyspark.context.SparkContext):
 
 	def _do_init(self, *args, **kwargs):
 		super(CassandraSparkContext, self)._do_init(*args, **kwargs)
-		_init_cassandra_spark_context(self)
+# 		_init_cassandra_spark_context(self)
 
 	def cassandraTable(self, keyspace, table, row_format=None, read_conf=None):
 		"""Returns a CassandraRDD for the given keyspace and table"""
