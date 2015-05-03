@@ -25,10 +25,6 @@ def monkey_patch_sc(sc):
 class CassandraSparkContext(pyspark.context.SparkContext):
 	"""Wraps a SparkContext which allows reading CQL rows from Cassandra"""
 
-	def _do_init(self, *args, **kwargs):
-		super(CassandraSparkContext, self)._do_init(*args, **kwargs)
-# 		_init_cassandra_spark_context(self)
-
 	def cassandraTable(self, keyspace, table, row_format=None, read_conf=None):
 		"""Returns a CassandraRDD for the given keyspace and table"""
 		return CassandraRDD(keyspace, table, self, row_format, read_conf)
