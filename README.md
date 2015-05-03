@@ -9,9 +9,9 @@ This project was initially forked from https://github.com/Parsely/pyspark-cassan
 
 **Contents:**
 * [Compatibility](#compatibility)
-* [Building](#building)
 * [Using with PySpark](#using-with-pyspark)
 * [Using with PySpark shell](#using-with-pyspark-shell)
+* [Building](#building)
 * [API](#api)
 * [Examples](#examples)
 * [Problems / ideas?](#problems--ideas)
@@ -26,24 +26,19 @@ Currently PySpark Cassandra has been succesfully used with Spark version 1.2.0, 
 
 
 
-Building
---------
-
-A Java / JVM library as well as a python library is required to use PySpark Cassandra. They can be built with:
-
-```bash
-make dist
-```
-
-This creates 1) a fat jar with the Cassandra - Spark connector and additional classes for bridging Spark and PySpark for Cassandra data and 2) a python source distribution at:
-
-* `target/pyspark_cassandra-<version>.jar`
-* `target/pyspark_cassandra_<version>-<python version>.egg`.
-
-
-
 Using with PySpark
 ------------------
+
+### With Spark 1.3
+Pyspark Cassandra is published at [Spark Packages](spark-packages.org/package/TargetHolding/pyspark-cassandra). This allows easy usage with Spark 1.3 and beyond through:
+```bash
+spark-submit \
+	--packages TargetHolding/pyspark-cassandra:<version> \
+	--conf spark.cassandra.connection.host=your,cassandra,node,names
+```
+
+
+### With Spark 1.2 / without Spark Packages
 
 ```bash
 spark-submit \
@@ -65,6 +60,37 @@ Replace `spark-submit` with `pyspark` to start the interactive shell and don't p
 ```python
 import pyspark_cassandra
 ```
+
+
+
+Building
+--------
+### For Spark 1.3 with [Spark Packages](spark-packages.org/package/TargetHolding/pyspark-cassandra)
+Pyspark Cassandra can be compiled using:
+```bash
+sbt compile
+```
+The package can be published locally with:
+```bash
+sbt spPublishLocal
+```
+The package can be published to Spark Packages with (requires authentication and authorization):
+```bash
+sbt spPublish
+```
+
+### For local testing / pre Spark 1.3 versions / without Spark Packages
+A Java / JVM library as well as a python library is required to use PySpark Cassandra. They can be built with:
+
+```bash
+make dist
+```
+
+This creates 1) a fat jar with the Spark Cassandra Connector and additional classes for bridging Spark and PySpark for Cassandra data and 2) a python source distribution at:
+
+* `target/pyspark_cassandra-<version>.jar`
+* `target/pyspark_cassandra_<version>-<python version>.egg`.
+
 
 
 API
