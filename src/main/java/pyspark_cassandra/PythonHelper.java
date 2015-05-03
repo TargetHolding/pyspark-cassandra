@@ -11,6 +11,7 @@ import pyspark_cassandra.pickling.BatchUnpickle;
 import pyspark_cassandra.readers.CassandraRowReaderFactory;
 import pyspark_cassandra.readers.DictRowReaderFactory;
 import pyspark_cassandra.readers.KVDictsRowReaderFactory;
+import pyspark_cassandra.readers.KVRowsReaderFactory;
 import pyspark_cassandra.readers.KVTuplesRowReaderFactory;
 import pyspark_cassandra.readers.TupleRowReaderFactory;
 
@@ -90,6 +91,8 @@ public class PythonHelper {
 			return new KVTuplesRowReaderFactory();
 		case KV_DICTS:
 			return new KVDictsRowReaderFactory();
+		case KV_ROWS:
+			return new KVRowsReaderFactory();
 		default:
 			throw new IllegalArgumentException();
 		}

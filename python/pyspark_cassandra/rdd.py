@@ -27,8 +27,9 @@ class RowFormat(object):
 	KV_DICTS = 2
 	KV_TUPLES = 3
 	ROW = 4
+	KV_ROWS = 5
 	
-	values = (DICT, TUPLE, KV_DICTS, KV_TUPLES, ROW)
+	values = (DICT, TUPLE, KV_DICTS, KV_TUPLES, ROW, KV_ROWS)
 
 
 class CassandraRDD(RDD):

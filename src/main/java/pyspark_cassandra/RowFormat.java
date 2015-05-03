@@ -15,5 +15,5 @@ limitations under the License.
 package pyspark_cassandra;
 
 public enum RowFormat {
-	DICT, TUPLE, KV_DICTS, KV_TUPLES, ROW
+	DICT, TUPLE, KV_DICTS, KV_TUPLES, ROW, KV_ROWS
 }
