@@ -56,7 +56,21 @@ class Struct(tuple):
 	def __ne__(self, other):
 		return not self == other
 	
+
+	def __add__(self, other):
+		d = dict(self.__FIELDS__)
+		d.update(other.__FIELDS__)
+		return self.__class__(**d)
+
+	def __sub__(self, other):
+		d = { k:v for k,v in self.__FIELDS__.items() if k in other }
+		return self.__class__(**d)
+
 	
+	def __contains__(self, name):
+		return name in self.__FIELDS__
+
+
 	def __getattr__(self, name):
 		try:
 			return self.__FIELDS__[name]
@@ -85,7 +99,7 @@ class Struct(tuple):
 		return (self._creator(), (keys, values,))
 
 
-	def __repr__(self, *args, **kwargs):
+	def __repr__(self):
 		fields = sorted(self.__FIELDS__.items(), key=itemgetter(0))
 		values = ", ".join("%s=%r" % (k, v) for k, v in fields if k != '__FIELDS__')
 		return "%s(%s)" % (self.__class__.__name__, values)
@@ -96,13 +110,9 @@ class Row(Struct):
 	def _creator(self):
 		return _create_row
 	
-	
 class UDT(Struct):
 	def _creator(self):
 		return _create_udt
-
-
-
 
 
 def as_java_array(gateway, java_type, iterable):
