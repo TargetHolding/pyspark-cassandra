@@ -11,11 +11,12 @@
 # limitations under the License.
 
 from copy import copy
-from datetime import timedelta, datetime, date
+from itertools import groupby
+from operator import itemgetter
 
 from pyspark.rdd import RDD
 from pyspark.serializers import BatchedSerializer, PickleSerializer
-from pyspark_cassandra.types import as_java_array, as_java_object
+from pyspark_cassandra.types import as_java_array, as_java_object, Row
 from pyspark_cassandra.conf import WriteConf, ReadConf
 
 
@@ -93,6 +94,38 @@ class CassandraRDD(RDD):
 		new._cjrdd = new._cjrdd.where(clause, args)
 		new.jrdd = self._helper.pickledPartitions(self._cjrdd)
 		return new
+		
+		
+	def spanBy(self, *columns):
+		""""Groups rows by the given columns without shuffling.
+
+		@param *columns: an iterable of columns by which to group.
+		
+		Note that:
+		-	The rows are grouped by comparing the given columns in order and
+			starting a new group whenever the value of the given columns changes.
+			This works well with using the partition keys and one or more of the
+			clustering keys. Use rdd.groupBy(...) for any other grouping.  
+		-	The grouping is applied on the partition level. I.e. any grouping
+			will be a subset of its containing partition.
+		"""
+		
+		columns = set(str(c) for c in columns)
+		
+		def spanning_iterator(partition):
+			def key_by(columns):
+				for row in partition:
+					k = Row(**{c: row.__getattr__(c) for c in columns})
+					for c in columns:
+						del row[c]
+					
+					yield (k,row)
+			
+			for g, l in groupby(key_by(columns), itemgetter(0)):
+				yield g, list(_[1] for _ in l)
+				
+		return spanning_iterator
+	
 	
 	def __copy__(self):
 		c = CassandraRDD.__new__(CassandraRDD)
