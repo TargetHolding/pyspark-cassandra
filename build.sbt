@@ -11,7 +11,7 @@ credentials += Credentials(Path.userHome / ".ivy2" / ".sbtcredentials")
 licenses += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0") 
 
 libraryDependencies ++= Seq(
-	"com.datastax.spark" %% "spark-cassandra-connector-java" % "1.2.0-rc3"
+	"com.datastax.spark" %% "spark-cassandra-connector-java" % "1.2.0"
 )
 
 spName := "TargetHolding/pyspark-cassandra"
