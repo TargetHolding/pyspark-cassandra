@@ -71,6 +71,16 @@ class Struct(tuple):
 		return name in self.__FIELDS__
 
 
+	def __setitem__(self, name, value):
+		self.__setattr__(name, value)
+		
+	def __delitem__(self, name):
+		self.__delattr__(name)
+
+	def __getitem__(self, name):
+		return self.__getattr__(name)
+	
+	
 	def __getattr__(self, name):
 		try:
 			return self.__FIELDS__[name]
