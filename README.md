@@ -186,7 +186,7 @@ A `CassandraRDD` is very similar to a regular `RDD` in pyspark. It is extended w
 
 ### pyspark_cassandra.streaming
 
-When importing pyspark_cassandra.streaming the method ``saveToCassandra(...)``` is made available on DStreams.
+When importing ```pyspark_cassandra.streaming``` the method ``saveToCassandra(...)``` is made available on DStreams.
 
 
 Examples
