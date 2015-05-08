@@ -79,7 +79,7 @@ class CassandraRDD(RDD):
 		columns = as_java_array(self.ctx._gateway, "String", (str(c) for c in columns))
 		new = copy(self)
 		new._cjrdd = new._cjrdd.select(columns)
-		new.jrdd = self._helper.pickledPartitions(self._cjrdd)
+		new._jrdd = self._helper.pickledPartitions(new._cjrdd)
 		return new
 
 
@@ -92,7 +92,7 @@ class CassandraRDD(RDD):
 		args = as_java_array(self.ctx._gateway, "Object", args)
 		new = copy(self)
 		new._cjrdd = new._cjrdd.where(clause, args)
-		new.jrdd = self._helper.pickledPartitions(self._cjrdd)
+		new._jrdd = self._helper.pickledPartitions(new._cjrdd)
 		return new
 		
 		
