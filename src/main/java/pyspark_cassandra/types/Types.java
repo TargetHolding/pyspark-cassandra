@@ -50,6 +50,7 @@ public class Types {
 		Pickler.registerCustomPickler(Inet4Address.class, new AsStringPickler());
 		Pickler.registerCustomPickler(Inet6Address.class, new AsStringPickler());
 		Pickler.registerCustomPickler(ByteBuffer.class, new ByteBufferPickler());
+		Pickler.registerCustomPickler(LWRow.class, new LWRowPickler());
 		Pickler.registerCustomPickler(CassandraRow.class, new CassandraRowPickler());
 		Pickler.registerCustomPickler(UDTValue.class, new UDTValuePickler());
 	}

@@ -13,6 +13,7 @@ import pyspark_cassandra.readers.DictRowReaderFactory;
 import pyspark_cassandra.readers.KVDictsRowReaderFactory;
 import pyspark_cassandra.readers.KVRowsReaderFactory;
 import pyspark_cassandra.readers.KVTuplesRowReaderFactory;
+import pyspark_cassandra.readers.LWRowReaderFactory;
 import pyspark_cassandra.readers.TupleRowReaderFactory;
 
 import com.datastax.driver.core.ConsistencyLevel;
@@ -82,7 +83,7 @@ public class PythonHelper {
 
 		switch (RowFormat.values()[rowFormat]) {
 		case ROW:
-			return new CassandraRowReaderFactory();
+			return new LWRowReaderFactory();
 		case TUPLE:
 			return new TupleRowReaderFactory();
 		case DICT:

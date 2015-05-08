@@ -17,6 +17,7 @@ package pyspark_cassandra;
 import java.io.Serializable;
 import java.util.Map;
 
+import pyspark_cassandra.types.LWRow;
 import scala.collection.IndexedSeq;
 import scala.collection.Seq;
 
@@ -80,7 +81,7 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 				readAsKeyValueTuples((Object[]) row, buffer);
 				break;
 			case ROW:
-				readAsRow((CassandraRow) row, buffer);
+				readAsRow((LWRow) row, buffer);
 				break;
 			}
 		}
@@ -128,6 +129,18 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 				int idx = this.columnNames.indexOf(names.apply(i));
 				if (idx >= 0) {
 					buffer[idx] = values.apply(i);
+				}
+			}
+		}
+
+		private void readAsRow(LWRow row, Object[] buffer) {
+			String[] names = row.getFieldsNames();
+			Object[] values = row.getFieldValues();
+			
+			for (int i = 0; i < names.length; i++) {
+				int idx = this.columnNames.indexOf(names[i]);
+				if (idx >= 0) {
+					buffer[idx] = values[i];
 				}
 			}
 		}
