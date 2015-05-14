@@ -182,6 +182,7 @@ A `CassandraRDD` is very similar to a regular `RDD` in pyspark. It is extended w
 * ``select(*columns)``: Creates a CassandraRDD with the select clause applied.
 * ``where(clause, *args)``: Creates a CassandraRDD with a CQL where clause applied. The clause can contain ? markers with the arguments supplied as *args.
 * ``saveToCassandra(...)``: As above, but the keyspace and/or table __may__ be omitted to save to the same keyspace and/or table. 
+* ``spanBy(*columns)``: Groups rows by the given columns without shuffling. 
 
 
 ### pyspark_cassandra.streaming
