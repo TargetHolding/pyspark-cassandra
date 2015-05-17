@@ -16,18 +16,23 @@ package pyspark_cassandra.readers;
 
 import java.io.Serializable;
 
+import pyspark_cassandra.types.RawRow;
+import scala.Option;
+import scala.collection.Seq;
+
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.datastax.spark.connector.cql.TableDef;
+import com.datastax.spark.connector.rdd.reader.RowReader;
 import com.datastax.spark.connector.rdd.reader.RowReaderFactory;
 import com.datastax.spark.connector.rdd.reader.RowReaderOptions;
 
-public class TupleRowReaderFactory implements RowReaderFactory<Object[]>, Serializable {
+public class DeferringRowReaderFactory implements RowReaderFactory<RawRow>, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public TupleRowReader rowReader(TableDef tbl, RowReaderOptions opts) {
-		return new TupleRowReader(tbl, opts);
+	public RowReader<RawRow> rowReader(TableDef tableDef, RowReaderOptions options) {
+		return new DeferringRowReader(tableDef);
 	}
 
 	@Override
@@ -36,26 +41,37 @@ public class TupleRowReaderFactory implements RowReaderFactory<Object[]>, Serial
 	}
 
 	@Override
-	public Class<Object[]> targetClass() {
-		return Object[].class;
+	public Class<RawRow> targetClass() {
+		return RawRow.class;
 	}
 
-	private final class TupleRowReader extends BaseRowReader<Object[]> {
+	private final class DeferringRowReader implements RowReader<RawRow> {
 		private static final long serialVersionUID = 1L;
+		
+		private TableDef tableDef;
 
-		public TupleRowReader(TableDef tbl, RowReaderOptions opts) {
-			super(tbl, opts);
+		public DeferringRowReader(TableDef tableDef) {
+			this.tableDef = tableDef;
 		}
 
 		@Override
-		public Object[] read(Row row, String[] columnNames, ProtocolVersion protocolVersion) {
-			Object[] tuple = new Object[columnNames.length];
+		public RawRow read(Row row, String[] columnNames, ProtocolVersion protocolVersion) {
+			return new RawRow(row, columnNames, tableDef, protocolVersion);
+		}
 
-			for (int i = 0; i < columnNames.length; i++) {
-				tuple[i] = readColumn(i, row, protocolVersion);
-			}
+		@Override
+		public Option<Seq<String>> columnNames() {
+			return Option.apply(null);
+		}
 
-			return tuple;
+		@Override
+		public Option<Object> consumedColumns() {
+			return Option.apply(null);
+		}
+
+		@Override
+		public Option<Object> requiredColumns() {
+			return Option.apply(null);
 		}
 	}
 }

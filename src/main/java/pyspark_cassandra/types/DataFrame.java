@@ -10,22 +10,32 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
- */
+*/
 
 package pyspark_cassandra.types;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.List;
 
-import net.razorvine.pickle.PickleException;
-import net.razorvine.pickle.custom.Pickler;
+public class DataFrame {
+	private String[] names;
+	private String[] types;
+	private List<?>[] values;
 
-public class ByteBufferPickler extends GatheringByteBufferPickler {
-	@Override
-	public void pickle(Object o, OutputStream out, Pickler pickler) throws PickleException, IOException {
-		ByteBuffer[] buffers = new ByteBuffer[] { (ByteBuffer) o };
-		super.pickle(new GatheredByteBuffers(Arrays.asList(buffers)), out, pickler);
+	public DataFrame(String[] names, String[] types, List<?>[] values) {
+		this.names = names;
+		this.types = types;
+		this.values = values;
+	}
+
+	public String[] getColumnNames() {
+		return names;
+	}
+
+	public String[] getColumnTypes() {
+		return types;
+	}
+
+	public List<?>[] getColumnValues() {
+		return values;
 	}
 }

@@ -2,7 +2,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 # 
-#	 http://www.apache.org/licenses/LICENSE-2.0
+# 	 http://www.apache.org/licenses/LICENSE-2.0
 # 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,9 +15,13 @@ from itertools import groupby
 from operator import itemgetter
 
 from pyspark.rdd import RDD
-from pyspark.serializers import BatchedSerializer, PickleSerializer
 from pyspark_cassandra.types import as_java_array, as_java_object, Row
-from pyspark_cassandra.conf import WriteConf, ReadConf
+
+
+try:
+	import pandas as pd  # import used in SpanningRDD
+except:
+	pass
 
 
 class RowFormat(object):
@@ -53,8 +57,10 @@ class CassandraRDD(RDD):
 		
 		self.keyspace = keyspace
 		self.table = table
+		self.read_conf = read_conf
+		self.row_format = row_format
 		
-		read_conf = as_java_object(ctx._gateway, read_conf.__dict__) if read_conf else None
+		jread_conf = as_java_object(ctx._gateway, read_conf.__dict__) if read_conf else None
 		
 		self._helper = ctx._jvm.java.lang.Thread.currentThread().getContextClassLoader() \
 			.loadClass("pyspark_cassandra.PythonHelper").newInstance()
@@ -64,11 +70,10 @@ class CassandraRDD(RDD):
 				keyspace,
 				table,
 				ctx._jsc,
-				read_conf,
-				row_format,
+				jread_conf,
 			)
 			
-		jrdd = self._helper.pickledPartitions(self._cjrdd)
+		jrdd = self._helper.parseRows(self._cjrdd, row_format)
 		
 		super(CassandraRDD, self).__init__(jrdd, ctx)
 
@@ -76,10 +81,9 @@ class CassandraRDD(RDD):
 	def select(self, *columns):
 		"""Creates a CassandraRDD with the select clause applied.""" 
 
-		columns = as_java_array(self.ctx._gateway, "String", (str(c) for c in columns))
 		new = copy(self)
-		new._cjrdd = new._cjrdd.select(columns)
-		new._jrdd = self._helper.pickledPartitions(new._cjrdd)
+		new._cjrdd = new._cjrdd.select(as_java_array(self.ctx._gateway, "String", (str(c) for c in columns)))
+		new._jrdd = self._helper.parseRows(new._cjrdd, self.row_format)
 		return new
 
 
@@ -92,7 +96,7 @@ class CassandraRDD(RDD):
 		args = as_java_array(self.ctx._gateway, "Object", args)
 		new = copy(self)
 		new._cjrdd = new._cjrdd.where(clause, args)
-		new._jrdd = self._helper.pickledPartitions(new._cjrdd)
+		new._jrdd = self._helper.parseRows(new._cjrdd, self.row_format)
 		return new
 		
 		
@@ -110,7 +114,34 @@ class CassandraRDD(RDD):
 			will be a subset of its containing partition.
 		"""
 		
-		columns = set(str(c) for c in columns)
+		return SpanningRDD(self.ctx, self._cjrdd, self._jrdd, self._helper, columns)
+	
+	
+	def __copy__(self):
+		c = CassandraRDD.__new__(CassandraRDD)
+		c.__dict__.update(self.__dict__)
+		return c
+
+
+class SpanningRDD(RDD):
+	'''
+		An RDD which groups rows with the same key (as defined through named
+		columns) within each partition.
+	'''
+	def __init__(self, ctx, cjrdd, jrdd, helper, columns):
+		self._cjrdd = cjrdd
+		self.columns = columns
+		self._helper = helper
+		
+		rdd = RDD(jrdd, ctx).mapPartitions(self._spanning_iterator())
+		super(SpanningRDD, self).__init__(rdd._jrdd, ctx)
+		
+		
+	def _spanning_iterator(self):
+		''' implements basic spanning on the python side operating on Rows '''
+		# TODO implement in Java and support not only Rows
+		
+		columns = set(str(c) for c in self.columns)
 		
 		def spanning_iterator(partition):
 			def key_by(columns):
@@ -119,19 +150,38 @@ class CassandraRDD(RDD):
 					for c in columns:
 						del row[c]
 					
-					yield (k,row)
+					yield (k, row)
 			
 			for g, l in groupby(key_by(columns), itemgetter(0)):
 				yield g, list(_[1] for _ in l)
 				
 		return spanning_iterator
 	
-	
-	def __copy__(self):
-		c = CassandraRDD.__new__(CassandraRDD)
-		c.__dict__.update(self.__dict__)
-		return c
-	
+		
+	def asDataFrames(self, *index_by):
+		'''
+			Reads the spanned rows as DataFrames if pandas is available, or as
+			a dict of numpy arrays if only numpy is available or as a dict with
+			primitives and objects otherwise.
+			
+			@param index_by If pandas is available, the dataframes will be
+			indexed by the given columns.
+		'''
+		for c in index_by:
+			if c in self.columns:
+				raise ValueError('column %s cannot be used as index in the data'
+					'frames as it is a column by which the rows are spanned.') 
+		
+		columns = as_java_array(self.ctx._gateway, "String", (str(c) for c in self.columns))
+		jrdd = self._helper.spanBy(self._cjrdd, columns)
+		rdd = RDD(jrdd, self.ctx)
+		
+		global pd
+		if index_by and pd:
+			return rdd.map(lambda _: _.set_index(str(c) for c in index_by))
+		else:
+			return rdd
+
 	
 def saveToCassandra(rdd, keyspace=None, table=None, columns=None, write_conf=None, row_format=None):
 	'''

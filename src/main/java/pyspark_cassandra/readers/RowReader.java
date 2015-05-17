@@ -1,45 +1,33 @@
 package pyspark_cassandra.readers;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.spark.api.java.function.Function;
+
+import pyspark_cassandra.types.RawRow;
 import pyspark_cassandra.types.Types;
-import scala.Option;
 import scala.collection.Seq;
 
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.datastax.spark.connector.cql.ColumnDef;
 import com.datastax.spark.connector.cql.TableDef;
-import com.datastax.spark.connector.rdd.reader.RowReader;
-import com.datastax.spark.connector.rdd.reader.RowReaderOptions;
 
-public abstract class BaseRowReader<T> implements RowReader<T> {
+public abstract class RowReader<T> implements Serializable, Function<RawRow, T> {
 	private static final long serialVersionUID = 1L;
-	
-	protected TableDef tbl;
-	protected RowReaderOptions opts;
-
-	public BaseRowReader(TableDef tbl, RowReaderOptions opts) {
-		this.tbl = tbl;
-		this.opts = opts;
-	}
 
 	@Override
-	public Option<Object> requiredColumns() {
-		return Option.apply(null);
+	public T call(RawRow row) throws Exception {
+		return parse(row.getRow(), row.getColumnNames(), row.getTableDef(), row.getProtocolVersion());
 	}
 
-	@Override
-	public Option<Object> consumedColumns() {
-		return Option.apply(null);
-	}
-
-	@Override
-	public Option<Seq<String>> columnNames() {
-		return Option.apply(null);
-	}
+	public abstract T parse(Row row,
+			String[] columnNames,
+			TableDef tableDef,
+			ProtocolVersion protocolVersion);
 
 	protected Object readColumn(int idx, Row row, ProtocolVersion protocolVersion) {
 		ByteBuffer bytes = row.getBytesUnsafe(idx);

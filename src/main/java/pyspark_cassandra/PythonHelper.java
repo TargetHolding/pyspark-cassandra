@@ -1,3 +1,17 @@
+/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+ */
+
 package pyspark_cassandra;
 
 import java.util.Map;
@@ -8,13 +22,15 @@ import org.apache.spark.streaming.api.java.JavaDStream;
 
 import pyspark_cassandra.pickling.BatchPickle;
 import pyspark_cassandra.pickling.BatchUnpickle;
-import pyspark_cassandra.readers.CassandraRowReaderFactory;
-import pyspark_cassandra.readers.DictRowReaderFactory;
-import pyspark_cassandra.readers.KVDictsRowReaderFactory;
+import pyspark_cassandra.readers.DeferringRowReaderFactory;
+import pyspark_cassandra.readers.DictRowReader;
+import pyspark_cassandra.readers.KVDictsRowReader;
 import pyspark_cassandra.readers.KVRowsReaderFactory;
-import pyspark_cassandra.readers.KVTuplesRowReaderFactory;
-import pyspark_cassandra.readers.LWRowReaderFactory;
-import pyspark_cassandra.readers.TupleRowReaderFactory;
+import pyspark_cassandra.readers.KVTuplesRowReader;
+import pyspark_cassandra.readers.LWRowReader;
+import pyspark_cassandra.readers.RowReader;
+import pyspark_cassandra.readers.TupleRowReader;
+import pyspark_cassandra.types.RawRow;
 
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.spark.connector.japi.CassandraJavaUtil;
@@ -26,19 +42,58 @@ import com.datastax.spark.connector.japi.rdd.CassandraJavaRDD;
 import com.datastax.spark.connector.rdd.ReadConf;
 import com.datastax.spark.connector.rdd.reader.RowReaderFactory;
 
+/**
+ * Main access point for Cassandra related features from PySpark. Many of the features in pyspark_cassandra are mainly
+ * implemented in Java and are only accessed from python.
+ */
 public class PythonHelper {
-	@SuppressWarnings("unchecked")
-	public CassandraJavaRDD<Object> cassandraTable(String keyspace, String table, JavaSparkContext sc,
-			Map<String, Object> readConf, Integer rowFormat) {
-		RowReaderFactory<Object> rrf = (RowReaderFactory<Object>) rowReaderFactory(rowFormat);
+	public CassandraJavaRDD<RawRow> cassandraTable(String keyspace, String table, JavaSparkContext sc,
+			Map<String, Object> readConf) {
+		return cassandraTable(keyspace, table, sc, readConf, new DeferringRowReaderFactory());
+	}
 
-		// TODO some read conf options may also be set in the config of the spark context?
-		return CassandraJavaUtil.javaFunctions(sc).cassandraTable(keyspace, table, rrf)
+	private <T> CassandraJavaRDD<T> cassandraTable(String keyspace, String table, JavaSparkContext sc,
+			Map<String, Object> readConf, RowReaderFactory<T> rrf) {
+		return CassandraJavaUtil.javaFunctions(sc)
+				.cassandraTable(keyspace, table, rrf)
 				.withReadConf(readConf(readConf));
 	}
 
-	public JavaRDD<byte[]> pickledPartitions(JavaRDD<Object> rdd) {
-		return rdd.mapPartitions(new BatchPickle());
+	public JavaRDD<byte[]> spanBy(CassandraJavaRDD<RawRow> rdd, String[] columns) {
+		return rdd
+				.mapPartitions(new SpanningDataFrameReader(columns), true)
+				.mapPartitions(new BatchPickle<Object[]>(), true);
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public JavaRDD<byte[]> parseRows(CassandraJavaRDD<RawRow> rdd, Integer rowFormat) {
+		return rdd
+				.map(rowParser(rowFormat))
+				.mapPartitions(new BatchPickle(), true);
+	}
+
+	@SuppressWarnings("rawtypes")
+	private RowReader rowParser(Integer rowFormat) {
+		if (rowFormat == null) {
+			return new LWRowReader();
+		}
+
+		switch (RowFormat.values()[rowFormat]) {
+		case ROW:
+			return new LWRowReader();
+		case TUPLE:
+			return new TupleRowReader();
+		case DICT:
+			return new DictRowReader();
+		case KV_TUPLES:
+			return new KVTuplesRowReader();
+		case KV_DICTS:
+			return new KVDictsRowReader();
+		case KV_ROWS:
+			return new KVRowsReaderFactory();
+		default:
+			throw new IllegalArgumentException();
+		}
 	}
 
 	public void saveToCassandra(JavaRDD<byte[]> rdd, String keyspace, String table, String[] columns,
@@ -52,8 +107,7 @@ public class PythonHelper {
 
 	public void saveToCassandra(JavaDStream<byte[]> dstream, String keyspace, String table, String[] columns,
 			Map<String, Object> writeConf, Integer rowFormat) {
-		DStreamJavaFunctions<Object> cdstream = CassandraStreamingJavaUtil.javaFunctions(dstream
-				.flatMap(new BatchUnpickle()));
+		DStreamJavaFunctions<Object> cdstream = CassandraStreamingJavaUtil.javaFunctions(dstream.flatMap(new BatchUnpickle()));
 		ObjectRowWriterFactory rrf = rowWriterFactory(rowFormat);
 		RDDAndDStreamCommonJavaFunctions<Object>.WriterBuilder builder = cdstream.writerBuilder(keyspace, table, rrf);
 
@@ -76,29 +130,6 @@ public class PythonHelper {
 		builder.saveToCassandra();
 	}
 
-	private RowReaderFactory<?> rowReaderFactory(Integer rowFormat) {
-		if (rowFormat == null) {
-			return new CassandraRowReaderFactory();
-		}
-
-		switch (RowFormat.values()[rowFormat]) {
-		case ROW:
-			return new LWRowReaderFactory();
-		case TUPLE:
-			return new TupleRowReaderFactory();
-		case DICT:
-			return new DictRowReaderFactory();
-		case KV_TUPLES:
-			return new KVTuplesRowReaderFactory();
-		case KV_DICTS:
-			return new KVDictsRowReaderFactory();
-		case KV_ROWS:
-			return new KVRowsReaderFactory();
-		default:
-			throw new IllegalArgumentException();
-		}
-	}
-
 	private ObjectRowWriterFactory rowWriterFactory(Integer rowFormat) {
 		if (rowFormat == null) {
 			return new ObjectRowWriterFactory(null);
@@ -107,16 +138,17 @@ public class PythonHelper {
 		}
 	}
 
+	// TODO some read conf options may also be set in the config of the spark context?
 	private ReadConf readConf(Map<String, Object> values) {
 		int splitSize = (int) get(values, "split_size", ReadConf.DefaultSplitSize());
 		int fetchSize = (int) get(values, "fetch_size", ReadConf.DefaultFetchSize());
-	
+
 		ConsistencyLevel consistencyLevel = getConsistencyLevel(get(values, "consistency_level", null),
 				ReadConf.DefaultConsistencyLevel());
-	
+
 		// Defaults to false if not set. This hides some compatibility issues with default settings
 		boolean taskMetricsEnabled = (boolean) get(values, "metrics_enabled", false);
-	
+
 		return new ReadConf(splitSize, fetchSize, consistencyLevel, taskMetricsEnabled);
 	}
 

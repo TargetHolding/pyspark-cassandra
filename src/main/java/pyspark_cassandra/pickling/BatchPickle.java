@@ -11,7 +11,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 
 import pyspark_cassandra.types.Types;
 
-public class BatchPickle implements FlatMapFunction<Iterator<Object>, byte[]> {
+public class BatchPickle<T> implements FlatMapFunction<Iterator<T>, byte[]> {
 	private static final long serialVersionUID = 1L;
 
 	private static final int DEFAULT_BATCH_SIZE = 1000;
@@ -32,7 +32,7 @@ public class BatchPickle implements FlatMapFunction<Iterator<Object>, byte[]> {
 	}
 
 	@Override
-	public Iterable<byte[]> call(Iterator<Object> partition) throws Exception {
+	public Iterable<byte[]> call(Iterator<T> partition) throws Exception {
 		final BatchingIterator<?> bi = new BatchingIterator<>(partition, this.batchSize);
 
 		return new Iterable<byte[]>() {
