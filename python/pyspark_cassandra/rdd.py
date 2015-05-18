@@ -178,7 +178,7 @@ class SpanningRDD(RDD):
 		
 		global pd
 		if index_by and pd:
-			return rdd.map(lambda _: _.set_index(str(c) for c in index_by))
+			return rdd.mapValues(lambda _: _.set_index(*[str(c) for c in index_by]))
 		else:
 			return rdd
 
