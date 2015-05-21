@@ -18,10 +18,8 @@ import java.io.Serializable;
 import java.util.Map;
 
 import pyspark_cassandra.types.LWRow;
-import scala.collection.IndexedSeq;
 import scala.collection.Seq;
 
-import com.datastax.spark.connector.CassandraRow;
 import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.writer.RowWriter;
 import com.datastax.spark.connector.writer.RowWriterFactory;
@@ -162,7 +160,7 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 			// user must set the row_format explicitly
 
 			// CassandraRow map to ROW of course
-			if (row instanceof CassandraRow) {
+			if (row instanceof LWRow) {
 				return RowFormat.ROW;
 			}
 

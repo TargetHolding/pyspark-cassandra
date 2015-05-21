@@ -19,7 +19,6 @@ import java.util.List;
 
 import net.razorvine.pickle.IObjectConstructor;
 import net.razorvine.pickle.PickleException;
-import scala.collection.immutable.IndexedSeq;
 
 public abstract class StructUnpickler implements IObjectConstructor {
 	@Override
@@ -28,10 +27,8 @@ public abstract class StructUnpickler implements IObjectConstructor {
 		List<String> fieldNames = (ArrayList<String>) args[0];
 		List<Object> fieldValues = args[1] instanceof List ? (List) args[1] : Types.toJavaList((Object[]) args[1]);
 
-		IndexedSeq<String> fieldNamesSeq = Types.toArraySeq(fieldNames).toIndexedSeq();
-		IndexedSeq<Object> fieldValuesSeq = Types.toArraySeq(fieldValues).toIndexedSeq();
-		return this.construct(fieldNamesSeq, fieldValuesSeq);
+		return this.construct(fieldNames, fieldValues);
 	}
 
-	public abstract Object construct(IndexedSeq<String> fieldNames, IndexedSeq<Object> fieldValues);
+	public abstract Object construct(List<String> fieldNames, List<Object> fieldValues);
 }
