@@ -12,15 +12,14 @@
 
 from collections import Set, Iterable, Mapping
 from datetime import datetime
+from dateutil import tz
 from operator import itemgetter
 import struct
 from time import mktime
 
-import pytz
-
 
 try:
-	# import is accessed as globals, see _create_spanning_dataframe(...)
+	# import accessed as globals, see _create_spanning_dataframe(...)
 	import numpy as np
 	import pandas as pd
 except ImportError:
@@ -223,7 +222,8 @@ def _decode_primitives(ctype, cvalue):
 	primitives = _unpack(fmt, cvalue)
 	
 	if(ctype == '>M8[ms]'):
-		return [datetime.utcfromtimestamp(l).replace(tzinfo=pytz.UTC) for l in primitives]
+		utc = tz.tzutc()
+		return [datetime.utcfromtimestamp(l).replace(tzinfo=utc) for l in primitives]
 	else:
 		return primitives
 
@@ -234,7 +234,6 @@ def _unpack(fmt, cvalue):
 		raise ValueError('number of bytes must be a multiple of %s for format %s' % (stride, fmt))
 	
 	return [struct.unpack(cvalue[o:o+stride]) for o in range(len(cvalue) / stride, stride)]
-
 	
 
 
