@@ -11,8 +11,7 @@
 # limitations under the License.
 
 from collections import Set, Iterable, Mapping
-from datetime import datetime
-from dateutil import tz
+from datetime import datetime, tzinfo, timedelta
 from operator import itemgetter
 import struct
 from time import mktime
@@ -202,6 +201,24 @@ def _to_list(ctype, cvalue):
 	else:
 		return list(cvalue)
 
+# from https://docs.python.org/3/library/datetime.html
+ZERO = timedelta(0)
+
+class UTC(tzinfo):
+	def utcoffset(self, dt):
+		return ZERO
+	
+	def tzname(self, dt):
+		return "UTC"
+	
+	def dst(self, dt):
+		return ZERO
+	
+	def __repr__(self):
+		return self.__class__.__name__
+
+utc = UTC()
+
 
 _numpy_to_struct_formats = {
 	'>b1': '?',
@@ -222,8 +239,7 @@ def _decode_primitives(ctype, cvalue):
 	primitives = _unpack(fmt, cvalue)
 	
 	if(ctype == '>M8[ms]'):
-		utc = tz.tzutc()
-		return [datetime.utcfromtimestamp(l).replace(tzinfo=utc) for l in primitives]
+		return [datetime.utcfromtimestamp(l).replace(tzinfo=UTC) for l in primitives]
 	else:
 		return primitives
 
