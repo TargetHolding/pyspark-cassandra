@@ -20,3 +20,4 @@ sparkVersion := "1.3.1"
 
 sparkComponents += "streaming"
 
+javacOptions ++= Seq("-source", "1.7", "-target", "1.7")
