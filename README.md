@@ -30,7 +30,7 @@ Using with PySpark
 ------------------
 
 ### With Spark 1.3
-Pyspark Cassandra is published at [Spark Packages](spark-packages.org/package/TargetHolding/pyspark-cassandra). This allows easy usage with Spark 1.3 and beyond through:
+Pyspark Cassandra is published at [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra). This allows easy usage with Spark 1.3 and beyond through:
 ```bash
 spark-submit \
 	--packages TargetHolding/pyspark-cassandra:<version> \
@@ -65,7 +65,7 @@ import pyspark_cassandra
 
 Building
 --------
-### For Spark 1.3 with [Spark Packages](spark-packages.org/package/TargetHolding/pyspark-cassandra)
+### For Spark 1.3 with [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra)
 Pyspark Cassandra can be compiled using:
 ```bash
 sbt compile
