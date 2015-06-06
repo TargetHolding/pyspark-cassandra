@@ -15,3 +15,8 @@ services:
   - cassandra
 
 script: make clean dist test-integration-matrix
+
+cache:
+  directories:
+    - lib
+    - $HOME/.m2
