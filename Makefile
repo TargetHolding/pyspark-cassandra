@@ -36,11 +36,14 @@ test-integration: \
 	test-integration-teardown
 
 test-integration-setup:
+	test -d venv || virtualenv venv
+	venv/bin/pip install cassandra-driver
+	venv/bin/pip install ccm
 	mkdir -p ./.ccm
-	ccm status --config-dir=./.ccm || ccm create pyspark_test -v 2.1.4 -n 1 -s --config-dir=./.ccm
+	venv/bin/ccm status --config-dir=./.ccm || venv/bin/ccm create pyspark_test -v 2.1.4 -n 1 -s --config-dir=./.ccm
 
 test-integration-teardown:
-	ccm remove --config-dir=./.ccm
+	venv/bin/ccm remove --config-dir=./.ccm
 	
 test-integration-spark-1.2.1:
 	$(call test-integration-for-version,1.2.1)
@@ -55,9 +58,6 @@ test-integration-spark-1.3.1:
 	$(call test-integration-for-version,1.3.1)
 
 define test-integration-for-version
-	test -d venv || virtualenv venv
-	venv/bin/pip install cassandra-driver
-		
 	mkdir -p lib && test -d lib/spark-$1-bin-hadoop2.4 || \
 		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-hadoop2.4.tgz | tar xz && popd)
 	
