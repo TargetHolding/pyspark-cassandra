@@ -77,6 +77,8 @@ define test-integration-for-version
 	mkdir -p lib && test -d lib/spark-$1-bin-hadoop2.4 || \
 		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-hadoop2.4.tgz | tar xz && popd)
 	
+	cp log4j.properties lib/spark-$1-bin-hadoop2.4/conf/
+
 	source venv/bin/activate ; \
 		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
 			--master local[*] \
