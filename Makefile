@@ -81,8 +81,8 @@ define test-integration-for-version
 		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
 			--master local[*] \
 			--conf spark.cassandra.connection.host="localhost" \
-			--jars target/pyspark_cassandra-0.1.4.jar \
-			--py-files target/pyspark_cassandra-0.1.4-py2.7.egg \
+			--jars target/pyspark_cassandra-0.1.5.jar \
+			--py-files target/pyspark_cassandra-0.1.5-py2.7.egg \
 			src/test/python/pyspark_cassandra/it_suite.py
 endef
 
