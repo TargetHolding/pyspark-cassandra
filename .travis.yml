@@ -20,7 +20,7 @@ addons:
 services:
   - cassandra
 
-script: make clean dist test-integration-matrix
+script: make clean dist test-travis
 
 sudo: false
 
