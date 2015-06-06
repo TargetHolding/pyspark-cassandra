@@ -32,17 +32,30 @@ test-integration: \
 	test-integration-matrix \	
 	test-integration-teardown
 
-test-integration-setup:
+install-venv:
 	test -d venv || virtualenv venv
+	
+install-cassandra-driver: install-venv
 	venv/bin/pip install cassandra-driver
+	
+install-ccm: install-venv
 	venv/bin/pip install ccm
+
+start-cassandra: install-ccm	
 	mkdir -p ./.ccm
 	venv/bin/ccm status --config-dir=./.ccm || venv/bin/ccm create pyspark_test -v 2.1.4 -n 1 -s --config-dir=./.ccm
+	
+stop-cassandra:
+	venv/bin/ccm remove --config-dir=./.ccm
+
+test-integration-setup: \
+	start-cassandra
 
 test-integration-teardown:
-	venv/bin/ccm remove --config-dir=./.ccm
+	stop-cassandra
 	
 test-integration-matrix: \
+	install-cassandra-driver \
 	test-integration-spark-1.2.1 \
 	test-integration-spark-1.2.2 \
 	test-integration-spark-1.3.0 \
