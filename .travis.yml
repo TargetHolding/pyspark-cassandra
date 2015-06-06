@@ -10,6 +10,8 @@ jdk:
 
 before_install:
   - sudo apt-get install -qq python-virtualenv
-
-script: make test
   
+services:
+  - cassandra
+
+script: make test-integration-matrix

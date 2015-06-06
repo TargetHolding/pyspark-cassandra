@@ -29,10 +29,7 @@ test-java:
 
 test-integration: \
 	test-integration-setup \
-	test-integration-spark-1.2.1 \
-	test-integration-spark-1.2.2 \
-	test-integration-spark-1.3.0 \
-	test-integration-spark-1.3.1 \
+	test-integration-matrix \	
 	test-integration-teardown
 
 test-integration-setup:
@@ -45,6 +42,12 @@ test-integration-setup:
 test-integration-teardown:
 	venv/bin/ccm remove --config-dir=./.ccm
 	
+test-integration-matrix: \
+	test-integration-spark-1.2.1 \
+	test-integration-spark-1.2.2 \
+	test-integration-spark-1.3.0 \
+	test-integration-spark-1.3.1
+
 test-integration-spark-1.2.1:
 	$(call test-integration-for-version,1.2.1)
 
