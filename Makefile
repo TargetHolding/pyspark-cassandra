@@ -80,6 +80,7 @@ define test-integration-for-version
 	source venv/bin/activate ; \
 		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
 			--master local[*] \
+			--driver-memory 256m \
 			--conf spark.cassandra.connection.host="localhost" \
 			--jars target/pyspark_cassandra-0.1.5.jar \
 			--py-files target/pyspark_cassandra-0.1.5-py2.7.egg \
