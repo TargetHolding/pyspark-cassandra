@@ -1,6 +1,8 @@
 PySpark Cassandra
 =================
 
+[![Build Status](https://travis-ci.org/TargetHolding/pyspark-cassandra.svg)](https://travis-ci.org/TargetHolding/pyspark-cassandra)
+
 PySpark Cassandra brings back the fun in working with Cassandra data in PySpark.
 
 This module provides python support for Apache Spark's Resillient Distributed Datasets from Apache Cassandra CQL rows using [Cassandra Spark Connector](https://github.com/datastax/spark-cassandra-connector) within PySpark, both in the interactive shell and in python programmes submitted with spark-submit.
