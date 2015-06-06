@@ -4,9 +4,9 @@ scala:
   - "2.10.4"
 
 jdk:
-  - oraclejdk8
-  - oraclejdk7
   - openjdk7
+  - oraclejdk7
+  - oraclejdk8
 
 before_install:
   - sudo apt-get install -qq python-virtualenv
