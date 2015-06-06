@@ -8,13 +8,17 @@ jdk:
   - oraclejdk7
   - oraclejdk8
 
-before_install:
-  - sudo apt-get install -qq python-virtualenv
+addons:
+  apt:
+    packages:
+    - python-virtualenv
   
 services:
   - cassandra
 
 script: make clean dist test-integration-matrix
+
+sudo: false
 
 cache:
   directories:
