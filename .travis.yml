@@ -14,4 +14,4 @@ before_install:
 services:
   - cassandra
 
-script: make test-integration-matrix
+script: make clean dist test-integration-matrix
