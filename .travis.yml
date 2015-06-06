@@ -9,5 +9,8 @@ jdk:
   - openjdk8
   - openjdk7
 
+before_install:
+  - sudo apt-get install -qq python-virtualenv
+
 script: make test
   
