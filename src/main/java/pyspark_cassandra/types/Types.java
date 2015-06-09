@@ -31,8 +31,8 @@ import scala.collection.Map;
 import scala.collection.Seq;
 import scala.collection.mutable.ArraySeq;
 
+import com.datastax.driver.core.UDTValue;
 import com.datastax.spark.connector.CassandraRow;
-import com.datastax.spark.connector.UDTValue;
 
 public class Types {
 	static {
@@ -41,8 +41,8 @@ public class Types {
 
 	public static void registerCustomTypes() {
 		Unpickler.registerConstructor("uuid", "UUID", new UUIDUnpickler());
-		Unpickler.registerConstructor("pyspark.sql", "_create_row", new CassandraRowUnpickler());
-		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", new CassandraRowUnpickler());
+		Unpickler.registerConstructor("pyspark.sql", "_create_row", new LWRowUnpickler());
+		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", new LWRowUnpickler());
 		Unpickler.registerConstructor("pyspark_cassandra.types", "_create_udt", new UDTValueUnpickler());
 
 		Pickler.registerCustomPickler(UUID.class, new UUIDPickler());
@@ -50,9 +50,10 @@ public class Types {
 		Pickler.registerCustomPickler(Inet4Address.class, new AsStringPickler());
 		Pickler.registerCustomPickler(Inet6Address.class, new AsStringPickler());
 		Pickler.registerCustomPickler(ByteBuffer.class, new ByteBufferPickler());
+		Pickler.registerCustomPickler(GatheredByteBuffers.class, new GatheringByteBufferPickler());
 		Pickler.registerCustomPickler(LWRow.class, new LWRowPickler());
-		Pickler.registerCustomPickler(CassandraRow.class, new CassandraRowPickler());
 		Pickler.registerCustomPickler(UDTValue.class, new UDTValuePickler());
+		Pickler.registerCustomPickler(DataFrame.class, new DataFramePickler());
 	}
 
 	public static <T> List<T> toJavaList(T[] arr) {

@@ -17,15 +17,38 @@ package pyspark_cassandra.types;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 
+import net.razorvine.pickle.Opcodes;
 import net.razorvine.pickle.PickleException;
+import net.razorvine.pickle.PickleUtils;
+import net.razorvine.pickle.custom.IObjectPickler;
 import net.razorvine.pickle.custom.Pickler;
 
-public class ByteBufferPickler extends GatheringByteBufferPickler {
+public class GatheringByteBufferPickler implements IObjectPickler {
 	@Override
 	public void pickle(Object o, OutputStream out, Pickler pickler) throws PickleException, IOException {
-		ByteBuffer[] buffers = new ByteBuffer[] { (ByteBuffer) o };
-		super.pickle(new GatheredByteBuffers(Arrays.asList(buffers)), out, pickler);
+		GatheredByteBuffers buffers = ((GatheredByteBuffers) o);
+
+		out.write(Opcodes.GLOBAL);
+		out.write("__builtin__\nbytearray\n".getBytes());
+
+		out.write(Opcodes.BINSTRING);
+
+		int length = 0;
+		for (ByteBuffer b : buffers) {
+			length += b.remaining();
+		}
+
+		out.write(PickleUtils.integer_to_bytes(length));
+
+		WritableByteChannel c = Channels.newChannel(out);
+		for (ByteBuffer b : buffers) {
+			c.write(b);
+		}
+
+		out.write(Opcodes.TUPLE1);
+		out.write(Opcodes.REDUCE);
 	}
 }

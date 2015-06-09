@@ -14,26 +14,23 @@ limitations under the License.
 
 package pyspark_cassandra.readers;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import pyspark_cassandra.types.LWRow;
 
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.datastax.spark.connector.cql.TableDef;
 
-public class KVRowsReaderFactory extends KVRowReader<LWRow> {
+public class KVTuplesRowReader extends KVRowReader<Object[]> {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	protected LWRow parse(Row row, List<String> columnNames, TableDef tableDef, ProtocolVersion protocol) {
-		List<Object> values = new ArrayList<Object>(columnNames.size());
+	protected Object[] parse(Row row, List<String> columnNames, TableDef tableDef, ProtocolVersion protocol) {
+		Object[] key = new Object[columnNames.size()];
 
-		for (String column : columnNames) {
-			values.add(readColumn(column, row, protocol));
+		for (int i = 0; i < columnNames.size(); i++) {
+			key[i] = readColumn(columnNames.get(i), row, protocol);
 		}
 
-		return new LWRow(columnNames, values);
+		return key;
 	}
 }

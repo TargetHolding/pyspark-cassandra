@@ -14,13 +14,28 @@ limitations under the License.
 
 package pyspark_cassandra.types;
 
-import scala.collection.immutable.IndexedSeq;
+import java.util.List;
 
-import com.datastax.spark.connector.CassandraRow;
+public class DataFrame {
+	private String[] names;
+	private String[] types;
+	private List<?>[] values;
 
-public class CassandraRowUnpickler extends StructUnpickler {
-	@Override
-	public Object construct(IndexedSeq<String> fieldNames, IndexedSeq<Object> fieldValues) {
-		return new CassandraRow(fieldNames, fieldValues);
+	public DataFrame(String[] names, String[] types, List<?>[] values) {
+		this.names = names;
+		this.types = types;
+		this.values = values;
+	}
+
+	public String[] getColumnNames() {
+		return names;
+	}
+
+	public String[] getColumnTypes() {
+		return types;
+	}
+
+	public List<?>[] getColumnValues() {
+		return values;
 	}
 }

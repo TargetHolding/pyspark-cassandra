@@ -10,26 +10,15 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
- */
+*/
 
 package pyspark_cassandra.types;
 
-import scala.collection.IndexedSeq;
+import java.util.List;
 
-import com.datastax.spark.connector.CassandraRow;
-
-public class CassandraRowPickler extends StructPickler {
-	public String getCreator() {
-		return "pyspark_cassandra.types\n_create_row\n";
-	}
-
+public class LWRowUnpickler extends StructUnpickler {
 	@Override
-	public IndexedSeq<String> getFieldNames(Object o) {
-		return ((CassandraRow) o).toMap().keys().toIndexedSeq();
-	}
-
-	@Override
-	public IndexedSeq<Object> getFieldValues(Object o) {
-		return ((CassandraRow) o).toMap().values().toIndexedSeq();
+	public Object construct(List<String> fieldNames, List<Object> fieldValues) {
+		return new LWRow(fieldNames, fieldValues);
 	}
 }

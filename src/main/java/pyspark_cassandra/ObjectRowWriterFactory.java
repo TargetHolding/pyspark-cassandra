@@ -18,10 +18,8 @@ import java.io.Serializable;
 import java.util.Map;
 
 import pyspark_cassandra.types.LWRow;
-import scala.collection.IndexedSeq;
 import scala.collection.Seq;
 
-import com.datastax.spark.connector.CassandraRow;
 import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.writer.RowWriter;
 import com.datastax.spark.connector.writer.RowWriterFactory;
@@ -66,7 +64,7 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 			if (format == null) {
 				this.format = this.detectFormat(row);
 			}
-			
+
 			switch (this.format) {
 			case DICT:
 				readAsDict((Map<?, ?>) row, buffer);
@@ -82,6 +80,9 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 				break;
 			case ROW:
 				readAsRow((LWRow) row, buffer);
+				break;
+			case KV_ROWS:
+				readAsKeyValueRows((LWRow[]) row, buffer);
 				break;
 			}
 		}
@@ -121,26 +122,35 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 			System.arraycopy(value, 0, buffer, keyLength, Math.min(value.length, buffer.length - keyLength));
 		}
 
-		private void readAsRow(CassandraRow row, Object[] buffer) {
-			IndexedSeq<String> names = row.fieldNames();
-			IndexedSeq<Object> values = row.fieldValues();
-
-			for (int i = 0; i < names.size(); i++) {
-				int idx = this.columnNames.indexOf(names.apply(i));
-				if (idx >= 0) {
-					buffer[idx] = values.apply(i);
-				}
-			}
-		}
+		// private void readAsRow(CassandraRow row, Object[] buffer) {
+		// IndexedSeq<String> names = row.fieldNames();
+		// IndexedSeq<Object> values = row.fieldValues();
+		//
+		// for (int i = 0; i < names.size(); i++) {
+		// int idx = this.columnNames.indexOf(names.apply(i));
+		// if (idx >= 0) {
+		// buffer[idx] = values.apply(i);
+		// }
+		// }
+		// }
 
 		private void readAsRow(LWRow row, Object[] buffer) {
+			readAsRow(row, buffer, 0);
+		}
+
+		private void readAsKeyValueRows(LWRow[] row, Object[] buffer) {
+			readAsRow(row[0], buffer, 0);
+			readAsRow(row[1], buffer, row[0].getFieldsNames().length);
+		}
+
+		private void readAsRow(LWRow row, Object[] buffer, int offset) {
 			String[] names = row.getFieldsNames();
 			Object[] values = row.getFieldValues();
-			
+
 			for (int i = 0; i < names.length; i++) {
 				int idx = this.columnNames.indexOf(names[i]);
 				if (idx >= 0) {
-					buffer[idx] = values[i];
+					buffer[idx + offset] = values[i];
 				}
 			}
 		}
@@ -150,7 +160,7 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 			// user must set the row_format explicitly
 
 			// CassandraRow map to ROW of course
-			if (row instanceof CassandraRow) {
+			if (row instanceof LWRow) {
 				return RowFormat.ROW;
 			}
 

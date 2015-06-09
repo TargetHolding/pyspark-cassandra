@@ -14,24 +14,30 @@ limitations under the License.
 
 package pyspark_cassandra.readers;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.ByteBuffer;
 
 import pyspark_cassandra.types.LWRow;
 
+import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.datastax.spark.connector.cql.TableDef;
 
-public class KVRowsReaderFactory extends KVRowReader<LWRow> {
+public class LWRowReader extends RowReader<LWRow> {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	protected LWRow parse(Row row, List<String> columnNames, TableDef tableDef, ProtocolVersion protocol) {
-		List<Object> values = new ArrayList<Object>(columnNames.size());
+	public LWRow parse(Row row, String[] columnNames, TableDef tableDef, ProtocolVersion protocolVersion) {
+		ColumnDefinitions defs = row.getColumnDefinitions();
+		Object[] values = new Object[columnNames.length];
 
-		for (String column : columnNames) {
-			values.add(readColumn(column, row, protocol));
+		for (int i = 0; i < values.length; i++) {
+			if (!row.isNull(columnNames[i])) {
+				ByteBuffer bytes = row.getBytesUnsafe(columnNames[i]);
+				DataType type = defs.getType(columnNames[i]);
+				values[i] = type.deserialize(bytes, protocolVersion);
+			}
 		}
 
 		return new LWRow(columnNames, values);

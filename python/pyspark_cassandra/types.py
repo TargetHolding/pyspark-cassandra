@@ -1,7 +1,29 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#	 http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from collections import Set, Iterable, Mapping
-from datetime import datetime
+from datetime import datetime, tzinfo, timedelta
 from operator import itemgetter
+import struct
 from time import mktime
+
+
+try:
+	# import accessed as globals, see _create_spanning_dataframe(...)
+	import numpy as np
+	import pandas as pd
+except ImportError:
+	pass
+
 
 
 def _create_row(fields, values):
@@ -63,7 +85,7 @@ class Struct(tuple):
 		return self.__class__(**d)
 
 	def __sub__(self, other):
-		d = { k:v for k,v in self.__FIELDS__.items() if k in other }
+		d = { k:v for k, v in self.__FIELDS__.items() if k in other }
 		return self.__class__(**d)
 
 	
@@ -125,6 +147,112 @@ class UDT(Struct):
 		return _create_udt
 
 
+
+def _create_spanning_dataframe(cnames, ctypes, cvalues):
+	'''
+		Constructs a 'dataframe' from column names, numpy column types and
+		the column values.
+	
+		@param cnames: An iterable of name strings
+		@param ctypes: An iterable of numpy dtypes as strings (e.g. '>f4')
+		@param cvalues: An iterable of
+		
+		Note that cnames, ctypes and cvalues are expected to have equal length.
+	'''
+	
+	if len(cnames) != len(ctypes) or len(ctypes) != len(cvalues):
+		raise ValueError('The lengths of cnames, ctypes and cvalues must equal')
+
+	# convert the column values to numpy arrays if numpy is available
+	# otherwise use lists	
+	global np
+	convert = _to_nparrays if np else _to_list
+	arrays = { n : convert(t, v) for n, t, v in zip(cnames, ctypes, cvalues) }
+	
+	# if pandas is available, provide the arrays / lists as DataFrame
+	# otherwise use pyspark_cassandra.Row
+	global pd
+	if pd:
+		return pd.DataFrame(arrays)
+	else:
+		return Row(**arrays)
+
+
+def _to_nparrays(ctype, cvalue):
+	if isinstance(cvalue, (bytes, bytearray)):
+		# The array is byte swapped and set to little-endian. java encodes
+		# ints, longs, floats, etc. in big-endian.
+		# This costs some cycles (around 1 ms per 1*10^6 elements) but when
+		# using it it saves some when using the array (around 25 to 50 % which
+		# for summing amounts to half a ms)
+		# (the perf numbers above are on an Intel i5-4200M)
+		# Also it solves an issue with pickling datetime64 arrays see
+		# https://github.com/numpy/numpy/issues/5883
+		return np.frombuffer(cvalue, ctype).byteswap(True).newbyteorder('<')
+	else:
+		return np.fromiter(cvalue, None)
+
+
+def _to_list(ctype, cvalue):
+	if isinstance(cvalue, (bytes, bytearray)):
+		return _decode_primitives(ctype, cvalue)		
+	elif hasattr(cvalue, '__len__'):
+		return cvalue 
+	else:
+		return list(cvalue)
+
+# from https://docs.python.org/3/library/datetime.html
+ZERO = timedelta(0)
+
+class UTC(tzinfo):
+	def utcoffset(self, dt):
+		return ZERO
+	
+	def tzname(self, dt):
+		return "UTC"
+	
+	def dst(self, dt):
+		return ZERO
+	
+	def __repr__(self):
+		return self.__class__.__name__
+
+utc = UTC()
+
+
+_numpy_to_struct_formats = {
+	'>b1': '?',
+	'i4': '>i',
+	'>i8': '>q',
+	'>f4': '>f',
+	'>f8': '>d',
+	'>M8[ms]': '>q',
+}
+		
+def _decode_primitives(ctype, cvalue):
+	fmt = _numpy_to_struct_formats.get(ctype)
+	
+	# if unsupported, return as the list if bytes it was
+	if not fmt:
+		return cvalue		
+	
+	primitives = _unpack(fmt, cvalue)
+	
+	if(ctype == '>M8[ms]'):
+		return [datetime.utcfromtimestamp(l).replace(tzinfo=UTC) for l in primitives]
+	else:
+		return primitives
+
+
+def _unpack(fmt, cvalue):
+	stride = struct.calcsize(fmt)
+	if len(cvalue) % stride != 0:
+		raise ValueError('number of bytes must be a multiple of %s for format %s' % (stride, fmt))
+	
+	return [struct.unpack(cvalue[o:o+stride]) for o in range(len(cvalue) / stride, stride)]
+	
+
+
 def as_java_array(gateway, java_type, iterable):
 	"""Creates a Java array from a Python iterable, using the given p4yj gateway"""
 
@@ -137,6 +265,7 @@ def as_java_array(gateway, java_type, iterable):
 		arr[i] = jobj
 
 	return arr
+
 
 def as_java_object(gateway, obj):
 	"""Converts a limited set of types to their corresponding types in java. Supported are 'primitives' (which aren't

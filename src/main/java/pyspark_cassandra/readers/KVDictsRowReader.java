@@ -10,30 +10,29 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
- */
+*/
 
 package pyspark_cassandra.readers;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
-import pyspark_cassandra.types.LWRow;
+import java.util.Map;
 
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.datastax.spark.connector.cql.TableDef;
 
-public class KVRowsReaderFactory extends KVRowReader<LWRow> {
+public class KVDictsRowReader extends KVRowReader<Map<String, Object>> {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	protected LWRow parse(Row row, List<String> columnNames, TableDef tableDef, ProtocolVersion protocol) {
-		List<Object> values = new ArrayList<Object>(columnNames.size());
+	protected Map<String, Object> parse(Row row, List<String> columnNames, TableDef tableDef, ProtocolVersion protocol) {
+		Map<String, Object> key = new HashMap<String, Object>(columnNames.size());
 
-		for (String column : columnNames) {
-			values.add(readColumn(column, row, protocol));
+		for (String keyColumn : columnNames) {
+			key.put(keyColumn, readColumn(keyColumn, row, protocol));
 		}
 
-		return new LWRow(columnNames, values);
+		return key;
 	}
 }

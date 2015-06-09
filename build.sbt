@@ -1,6 +1,6 @@
 name := "pyspark-cassandra"
 
-version := "0.1.4"
+version := "0.1.5"
 
 organization := "TargetHolding"
 
@@ -20,3 +20,4 @@ sparkVersion := "1.3.1"
 
 sparkComponents += "streaming"
 
+javacOptions ++= Seq("-source", "1.7", "-target", "1.7")

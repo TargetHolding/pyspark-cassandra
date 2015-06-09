@@ -1,5 +1,6 @@
-# maven
+# maven / sbt
 target
+.cache
 
 # python
 *.pyc
