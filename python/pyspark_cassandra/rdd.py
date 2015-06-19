@@ -88,7 +88,7 @@ class CassandraRDD(RDD):
 
 
 	def limit(self, rows_number):
-		"""Creates a CassandraRDD with the select clause applied."""
+		"""Creates a CassandraRDD with the limit clause applied."""
 
 		new = copy(self)
 		new._cjrdd = new._cjrdd.limit(long(rows_number))
