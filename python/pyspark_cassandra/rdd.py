@@ -87,6 +87,15 @@ class CassandraRDD(RDD):
 		return new
 
 
+	def limit(self, rows_number):
+		"""Creates a CassandraRDD with the select clause applied."""
+
+		new = copy(self)
+		new._cjrdd = new._cjrdd.limit(long(rows_number))
+		new._jrdd = self._helper.parseRows(new._cjrdd, self.row_format)
+		return new
+
+
 	def where(self, clause, *args):
 		"""Creates a CassandraRDD with a CQL where clause applied.
 		@param clause: The where clause, either complete or with ? markers
