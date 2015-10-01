@@ -33,7 +33,9 @@ public class UDTValuePickler extends StructPickler {
 
 	@Override
 	public Collection<String> getFieldNames(Object o) {
-		return ((UDTValue) o).getType().getFieldNames();
+		//The returned generic Collection does not guarantee order and it would sometimes turn into 
+		//a python set -- we need the fieldnames to be sorted for pickling!
+		return new ArrayList(((UDTValue) o).getType().getFieldNames());
 	}
 
 	@Override
