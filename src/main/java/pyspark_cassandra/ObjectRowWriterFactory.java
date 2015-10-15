@@ -19,7 +19,9 @@ import java.util.Map;
 
 import pyspark_cassandra.types.LWRow;
 import scala.collection.Seq;
-
+import scala.collection.IndexedSeq;
+import scala.collection.mutable.ArraySeq;
+import com.datastax.spark.connector.ColumnRef;
 import com.datastax.spark.connector.cql.TableDef;
 import com.datastax.spark.connector.writer.RowWriter;
 import com.datastax.spark.connector.writer.RowWriterFactory;
@@ -33,13 +35,8 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 		this.format = format;
 	}
 
-	public RowWriter<Object> rowWriter(TableDef table, Seq<String> columnNames,
-			scala.collection.immutable.Map<String, String> aliasToColumnName) {
-		return this.rowWriter(table, columnNames);
-	}
-
-	public RowWriter<Object> rowWriter(TableDef table, Seq<String> columnNames) {
-		return new ObjectRowWriter(columnNames, format);
+	public RowWriter<Object> rowWriter(TableDef table, IndexedSeq<ColumnRef> selectedColumns) {
+		return new ObjectRowWriter(selectedColumns, format);
 	}
 
 	private final class ObjectRowWriter implements RowWriter<Object> {
@@ -48,8 +45,12 @@ public class ObjectRowWriterFactory implements RowWriterFactory<Object>, Seriali
 		private Seq<String> columnNames;
 		private RowFormat format;
 
-		public ObjectRowWriter(Seq<String> columnNames, RowFormat format) {
-			this.columnNames = columnNames;
+		public ObjectRowWriter(IndexedSeq<ColumnRef> selectedColumns, RowFormat format) {
+			ArraySeq<String> seq = new ArraySeq<String>(selectedColumns.length());
+			for (int i = 0; i < selectedColumns.length(); i++) {
+				seq.update(i, selectedColumns.apply(i).columnName());
+			}
+			this.columnNames = seq;
 			this.format = format;
 		}
 

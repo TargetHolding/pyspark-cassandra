@@ -4,15 +4,15 @@
 
     <groupId>pyspark_cassandra</groupId>
     <artifactId>pyspark_cassandra</artifactId>
-    <version>0.1.5</version>
+    <version>0.1.6</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <scala.version>2.10</scala.version>
-        <scala.version.full>2.10.4</scala.version.full>
-        <spark.version>1.3.1</spark.version>
-        <connector.version>1.2.0</connector.version>
+        <scala.version.full>2.10.5</scala.version.full>
+        <spark.version>1.4.1</spark.version>
+        <connector.version>1.4.0</connector.version>
     </properties>
 
     <dependencies>
@@ -130,7 +130,7 @@
                             <exclude>org.scala-lang:*</exclude>
                             <exclude>junit:*</exclude>
                             <exclude>ch.qos.logback:*</exclude>
-                            
+
                             <exclude>org.apache.commons:*</exclude>
                             <exclude>org.codehaus.jackson*:*</exclude>
                             <exclude>net.jpountz.lz4:*</exclude>
@@ -146,7 +146,7 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
-                                
+
                                 <exclude>build</exclude>
                                 <exclude>pyspark_cassandra.egg-info/</exclude>
                                 <exclude>**/*.py</exclude>

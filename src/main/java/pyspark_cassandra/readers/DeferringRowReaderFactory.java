@@ -19,25 +19,21 @@ import java.io.Serializable;
 import pyspark_cassandra.types.RawRow;
 import scala.Option;
 import scala.collection.Seq;
+import scala.collection.IndexedSeq;
 
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.Row;
 import com.datastax.spark.connector.cql.TableDef;
+import com.datastax.spark.connector.ColumnRef;
 import com.datastax.spark.connector.rdd.reader.RowReader;
 import com.datastax.spark.connector.rdd.reader.RowReaderFactory;
-import com.datastax.spark.connector.rdd.reader.RowReaderOptions;
 
 public class DeferringRowReaderFactory implements RowReaderFactory<RawRow>, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public RowReader<RawRow> rowReader(TableDef tableDef, RowReaderOptions options) {
+	public RowReader<RawRow> rowReader(TableDef tableDef, IndexedSeq<ColumnRef> selectedColumns) {
 		return new DeferringRowReader(tableDef);
-	}
-
-	@Override
-	public RowReaderOptions rowReader$default$2() {
-		return RowReaderOptions.Default();
 	}
 
 	@Override
@@ -47,7 +43,7 @@ public class DeferringRowReaderFactory implements RowReaderFactory<RawRow>, Seri
 
 	private final class DeferringRowReader implements RowReader<RawRow> {
 		private static final long serialVersionUID = 1L;
-		
+
 		private TableDef tableDef;
 
 		public DeferringRowReader(TableDef tableDef) {
@@ -60,17 +56,7 @@ public class DeferringRowReaderFactory implements RowReaderFactory<RawRow>, Seri
 		}
 
 		@Override
-		public Option<Seq<String>> columnNames() {
-			return Option.apply(null);
-		}
-
-		@Override
-		public Option<Object> consumedColumns() {
-			return Option.apply(null);
-		}
-
-		@Override
-		public Option<Object> requiredColumns() {
+		public Option<Seq<ColumnRef>> neededColumns() {
 			return Option.apply(null);
 		}
 	}
