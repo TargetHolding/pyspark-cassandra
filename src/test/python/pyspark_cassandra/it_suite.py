@@ -19,7 +19,7 @@ class CassandraTestCase(unittest.TestCase):
     def setUpClass(cls):
         super(CassandraTestCase, cls).setUpClass()
         cls.sc = CassandraSparkContext(conf=SparkConf().setAppName("PySpark Cassandra Test"))
-        cls.session = Cluster().connect()
+        cls.session = Cluster(protocol_version=3).connect()
         cls.session.execute('''
             CREATE KEYSPACE IF NOT EXISTS test_pyspark_cassandra
             WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};

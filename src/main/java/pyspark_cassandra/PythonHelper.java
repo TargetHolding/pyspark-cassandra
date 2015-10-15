@@ -19,6 +19,7 @@ import java.util.Map;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
+import scala.Option;
 
 import pyspark_cassandra.pickling.BatchPickle;
 import pyspark_cassandra.pickling.BatchUnpickle;
@@ -140,16 +141,17 @@ public class PythonHelper {
 
 	// TODO some read conf options may also be set in the config of the spark context?
 	private ReadConf readConf(Map<String, Object> values) {
-		int splitSize = (int) get(values, "split_size", ReadConf.DefaultSplitSize());
-		int fetchSize = (int) get(values, "fetch_size", ReadConf.DefaultFetchSize());
+		int splitSize = (int) get(values, "split_size", ReadConf.DefaultSplitSizeInMB());
+		int fetchSize = (int) get(values, "fetch_size", ReadConf.DefaultFetchSizeInRows());
 
 		ConsistencyLevel consistencyLevel = getConsistencyLevel(get(values, "consistency_level", null),
 				ReadConf.DefaultConsistencyLevel());
 
 		// Defaults to false if not set. This hides some compatibility issues with default settings
 		boolean taskMetricsEnabled = (boolean) get(values, "metrics_enabled", false);
-
-		return new ReadConf(splitSize, fetchSize, consistencyLevel, taskMetricsEnabled);
+		Object split_java = (Integer) get(values, "split", null);
+		scala.Option<Object> split = scala.Option.apply(split_java);
+		return new ReadConf(split, splitSize, fetchSize, consistencyLevel, taskMetricsEnabled);
 	}
 
 	private RDDAndDStreamCommonJavaFunctions<Object>.WriterBuilder writeConf(
