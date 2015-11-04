@@ -59,7 +59,11 @@ test-integration-matrix: \
 	test-integration-spark-1.2.1 \
 	test-integration-spark-1.2.2 \
 	test-integration-spark-1.3.0 \
-	test-integration-spark-1.3.1
+	test-integration-spark-1.3.1 \
+	test-integration-spark-1.4.0 \
+	test-integration-spark-1.4.1 \
+	test-integration-spark-1.5.0 \
+	test-integration-spark-1.5.1
 
 test-travis: \
   install-cassandra-driver
@@ -76,6 +80,18 @@ test-integration-spark-1.3.0:
 
 test-integration-spark-1.3.1:
 	$(call test-integration-for-version,1.3.1)
+
+test-integration-spark-1.4.0:
+	$(call test-integration-for-version,1.4.0)
+
+test-integration-spark-1.4.1:
+	$(call test-integration-for-version,1.4.1)
+
+test-integration-spark-1.5.0:
+	$(call test-integration-for-version,1.5.0)
+
+test-integration-spark-1.5.1:
+	$(call test-integration-for-version,1.5.1)
 
 define test-integration-for-version
 	mkdir -p lib && test -d lib/spark-$1-bin-hadoop2.4 || \
