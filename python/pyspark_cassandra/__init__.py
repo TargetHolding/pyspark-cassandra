@@ -44,6 +44,10 @@ __all__ = [
 pyspark.rdd.RDD.saveToCassandra = saveToCassandra
 
 # Monkey patch the sc variable in the caller if any
-parent_frame = inspect.currentframe().f_back
-if "sc" in parent_frame.f_globals:
-	monkey_patch_sc(parent_frame.f_globals["sc"])
+frame = inspect.currentframe().f_back
+while frame:
+    if "sc" in frame.f_globals:
+        monkey_patch_sc(frame.f_globals["sc"])
+        break
+    else:
+        frame = frame.f_back
