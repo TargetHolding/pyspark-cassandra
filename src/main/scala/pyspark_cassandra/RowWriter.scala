@@ -76,7 +76,9 @@ class GenericRowWriter(format: Integer, keyed: Boolean, columns: IndexedSeq[Colu
     val Array(k, v) = row.asInstanceOf[Array[Map[Any, Any]]]
 
     indexedColumns.map {
-      case (c, i) => buffer(i) = v.getOrDefault(c, k.get(c))
+      case (c, i) => {
+        buffer(i) = if (v.containsKey(c)) v.get(c) else k.get(c)
+      }
     }
   }
 
