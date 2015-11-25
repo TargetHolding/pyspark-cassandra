@@ -13,18 +13,18 @@
 from functools import partial
 
 import pyspark.context
-from pyspark_cassandra.rdd import CassandraRDD
+from pyspark_cassandra.rdd import CassandraTableScanRDD
 
 
 def monkey_patch_sc(sc):
-	sc.__class__ = CassandraSparkContext
-	sc.__dict__["cassandraTable"] = partial(CassandraSparkContext.cassandraTable, sc)
-	sc.__dict__["cassandraTable"].__doc__ = CassandraSparkContext.cassandraTable.__doc__
+    sc.__class__ = CassandraSparkContext
+    sc.__dict__["cassandraTable"] = partial(CassandraSparkContext.cassandraTable, sc)
+    sc.__dict__["cassandraTable"].__doc__ = CassandraSparkContext.cassandraTable.__doc__
 
 
 class CassandraSparkContext(pyspark.context.SparkContext):
-	"""Wraps a SparkContext which allows reading CQL rows from Cassandra"""
-
-	def cassandraTable(self, keyspace, table, row_format=None, read_conf=None):
-		"""Returns a CassandraRDD for the given keyspace and table"""
-		return CassandraRDD(keyspace, table, self, row_format, read_conf)
+    """Wraps a SparkContext which allows reading CQL rows from Cassandra"""
+    
+    def cassandraTable(self, *args, **kwargs):
+        """Returns a CassandraTableScanRDD for the given keyspace and table"""
+        return CassandraTableScanRDD(self, *args, **kwargs)

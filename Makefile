@@ -19,11 +19,11 @@ clean-dist:
 
 
 
-test: test-python test-java test-integration
+test: test-python test-scala test-integration
 
 test-python:
 
-test-java:
+test-scala:
 
 
 
@@ -51,72 +51,63 @@ stop-cassandra:
 test-integration-setup: \
 	start-cassandra
 
-test-integration-teardown:
+test-integration-teardown: \
 	stop-cassandra
 	
 test-integration-matrix: \
 	install-cassandra-driver \
-	test-integration-spark-1.2.1 \
-	test-integration-spark-1.2.2 \
-	test-integration-spark-1.3.0 \
-	test-integration-spark-1.3.1 \
-	test-integration-spark-1.4.0 \
 	test-integration-spark-1.4.1 \
 	test-integration-spark-1.5.0 \
-	test-integration-spark-1.5.1
+	test-integration-spark-1.5.1 \
+	test-integration-spark-1.5.2
 
 test-travis: \
   install-cassandra-driver
-	$(call test-integration-for-version,$$SPARK_VERSION)
-
-test-integration-spark-1.2.1:
-	$(call test-integration-for-version,1.2.1)
-
-test-integration-spark-1.2.2:
-	$(call test-integration-for-version,1.2.2)
-
-test-integration-spark-1.3.0:
-	$(call test-integration-for-version,1.3.0)
-
-test-integration-spark-1.3.1:
-	$(call test-integration-for-version,1.3.1)
-
-test-integration-spark-1.4.0:
-	$(call test-integration-for-version,1.4.0)
+	$(call test-integration-for-version,$$SPARK_VERSION,$$SPARK_PACKAGE_TYPE)
 
 test-integration-spark-1.4.1:
-	$(call test-integration-for-version,1.4.1)
+	$(call test-integration-for-version,1.4.1,hadoop2.6)
 
 test-integration-spark-1.5.0:
-	$(call test-integration-for-version,1.5.0)
+	$(call test-integration-for-version,1.5.0,hadoop2.6)
 
 test-integration-spark-1.5.1:
-	$(call test-integration-for-version,1.5.1)
+	$(call test-integration-for-version,1.5.1,hadoop2.6)
+
+test-integration-spark-1.5.2:
+	$(call test-integration-for-version,1.5.2,hadoop2.6)
 
 define test-integration-for-version
-	mkdir -p lib && test -d lib/spark-$1-bin-hadoop2.4 || \
-		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-hadoop2.4.tgz | tar xz && popd)
+	echo ======================================================================
+	echo testing integration with spark-$1
 	
-	cp log4j.properties lib/spark-$1-bin-hadoop2.4/conf/
+	mkdir -p lib && test -d lib/spark-$1-bin-$2 || \
+		(pushd lib && curl http://ftp.tudelft.nl/apache/spark/spark-$1/spark-$1-bin-$2.tgz | tar xz && popd)
+	
+	cp log4j.properties lib/spark-$1-bin-$2/conf/
 
 	source venv/bin/activate ; \
-		lib/spark-$1-bin-hadoop2.4/bin/spark-submit \
+		lib/spark-$1-bin-$2/bin/spark-submit \
 			--master local[*] \
 			--driver-memory 256m \
 			--conf spark.cassandra.connection.host="localhost" \
-			--jars target/pyspark_cassandra-0.1.5.jar \
-			--py-files target/pyspark_cassandra-0.1.5-py2.7.egg \
-			src/test/python/pyspark_cassandra/it_suite.py
+			--jars target/scala-2.10/pyspark-cassandra-assembly-0.2.0.jar \
+			--py-files target/pyspark_cassandra-0.2.0-py2.7.egg \
+			python/pyspark_cassandra/tests.py
+			
+	echo ======================================================================
 endef
 
 
-dist: dist-python dist-java
+dist: dist-python dist-scala
 
 dist-python:
 	python/setup.py bdist_egg -d ../target
+	rm -rf python/build/
+	rm -rf python/*.egg-info
 
-dist-java:
-	mvn package
+dist-scala:
+	sbt compile assembly
 
 
 all: clean dist

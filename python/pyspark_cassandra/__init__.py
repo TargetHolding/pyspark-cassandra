@@ -25,28 +25,33 @@ import pyspark_cassandra.rdd
 
 from .conf import WriteConf
 from .context import CassandraSparkContext, monkey_patch_sc
-from .rdd import CassandraRDD, saveToCassandra, RowFormat
+from .rdd import RowFormat
 from .types import Row, UDT
 
 
 __all__ = [
     "CassandraSparkContext",
-    "CassandraRDD",
     "ReadConf",
     "Row",
     "RowFormat",
+    "streaming",
     "UDT",
     "WriteConf"
 ]
 
 
 # Monkey patch the default python RDD so that it can be stored to Cassandra as CQL rows
+from .rdd import saveToCassandra, joinWithCassandraTable
 pyspark.rdd.RDD.saveToCassandra = saveToCassandra
+pyspark.rdd.RDD.joinWithCassandraTable = joinWithCassandraTable
 
 # Monkey patch the sc variable in the caller if any
 frame = inspect.currentframe().f_back
-while frame:
-    if "sc" in frame.f_globals:
+# Go back at most 10 frames
+for _ in range(10):
+    if not frame:
+        break
+    elif "sc" in frame.f_globals:
         monkey_patch_sc(frame.f_globals["sc"])
         break
     else:

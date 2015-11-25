@@ -16,3 +16,4 @@ venv
 lib
 .ccm
 metastore_db
+/bin/
