@@ -2,7 +2,7 @@ PySpark Cassandra
 =================
 
 [![Build Status](https://travis-ci.org/TargetHolding/pyspark-cassandra.svg)](https://travis-ci.org/TargetHolding/pyspark-cassandra)
-[![Code Climate](https://codeclimate.com/github/TargetHolding/pyspark-cassandra/badges/gpa.svg)](https://codeclimate.com/github/TargetHolding/pyspark-cassandra)
+[![Codacy Badge](https://api.codacy.com/project/badge/grade/1fb73418b06b4db18e3a4103a0ce056c)](https://www.codacy.com/app/frensjan/pyspark-cassandra)
 
 PySpark Cassandra brings back the fun in working with Cassandra data in PySpark.
 
