@@ -22,14 +22,14 @@ trait ToKV[KV] extends FromUnreadRow[Array[Any]] {
   def apply(row: UnreadRow): Array[Any] = {
     val k = transform(row, row.columnNames.intersect(row.table.primaryKey.map { _.columnName }))
     val v = transform(row, row.columnNames.intersect(row.table.regularColumns.map { _.columnName }))
-    return Array(k, v)
+    Array(k, v)
   }
 
   def transform(row: UnreadRow, columns: Array[String]): KV
 }
 
 // TODO why ship field names for every row?
-case class Row(fields: Array[String], values: Array[AnyRef])
+case class Row(fields: Seq[String], values: Seq[AnyRef])
 
 object ToRow extends FromUnreadRow[Row] {
   override def apply(row: UnreadRow): Row = {
@@ -72,6 +72,6 @@ class JoinedRowTransformer extends (((Any, UnreadRow)) => (Any, Any)) with Seria
     val format = Format.detect(pair._1)
     val parser = Format.parser(format._1, format._2)
     val parsed = parser.apply(pair._2)
-    return (pair._1, parsed)
+    (pair._1, parsed)
   }
 }

@@ -40,7 +40,7 @@ import scala.collection.JavaConversions.{
 import scala.collection.immutable.HashMap.HashTrieMap
 import scala.collection.immutable.List
 import scala.collection.immutable.Map.{ Map1, Map2, Map3, Map4, WithDefault }
-import scala.collection.mutable.{Buffer,WrappedArray}
+import scala.collection.mutable.{ ArraySeq, Buffer, WrappedArray }
 import scala.reflect.runtime.universe.typeTag
 
 import com.datastax.driver.core.ProtocolVersion
@@ -76,6 +76,8 @@ object Pickling {
     Pickler.registerCustomPickler(classOf[DriverUDTValue], UDTValuePickler)
     Pickler.registerCustomPickler(classOf[DataFrame], DataFramePickler)
     Pickler.registerCustomPickler(Class.forName("scala.collection.immutable.$colon$colon"), ListPickler)
+    Pickler.registerCustomPickler(classOf[ArraySeq[_]], ListPickler)
+    Pickler.registerCustomPickler(classOf[Buffer[_]], ListPickler)
     Pickler.registerCustomPickler(classOf[WrappedArray.ofRef[_]], ListPickler)
     Pickler.registerCustomPickler(classOf[Stream.Cons[_]], ListPickler)
     Pickler.registerCustomPickler(classOf[Tuple1[_]], ListPickler)
@@ -159,13 +161,13 @@ trait StructPickler extends IObjectPickler {
 
 trait StructUnpickler extends IObjectConstructor {
   def construct(args: Array[AnyRef]): Object = {
-    val fields = Utils.asArray[String](args(0))
-    val values = Utils.asArray[AnyRef](args(1))
+    val fields = Utils.asSeq[String](args(0))
+    val values = Utils.asSeq[AnyRef](args(1))
 
     construct(fields, values)
   }
 
-  def construct(fields: Array[String], values: Array[AnyRef]): Object
+  def construct(fields: Seq[String], values: Seq[AnyRef]): Object
 }
 
 object PlainRowPickler extends StructPickler {
@@ -175,7 +177,7 @@ object PlainRowPickler extends StructPickler {
 }
 
 object PlainRowUnpickler extends StructUnpickler {
-  def construct(fields: Array[String], values: Array[AnyRef]) = Row(fields, values)
+  def construct(fields: Seq[String], values: Seq[AnyRef]) = Row(fields, values)
 }
 
 object UDTValuePickler extends StructPickler {
@@ -199,7 +201,11 @@ object UDTValuePickler extends StructPickler {
 }
 
 object UDTValueUnpickler extends StructUnpickler {
-  def construct(fields: Array[String], values: Array[AnyRef]) = UDTValue(fields, values)
+  def construct(fields: Seq[String], values: Seq[AnyRef]) = {
+    val f = Utils.asArray[String](fields)
+    val v = Utils.asArray[AnyRef](values)
+    UDTValue(f, v)
+  }
 }
 
 object AsStringPickler extends IObjectPickler {
@@ -226,19 +232,19 @@ object UUIDUnpickler extends IObjectConstructor {
   }
 
   class UUIDHolder {
-    var uuid: Option[UUID] = None
+    var uuid: UUID = null
 
     def __setstate__(values: HashMap[String, Object]): UUID = {
       val i = values.get("int").asInstanceOf[BigInteger]
       val buffer = ByteBuffer.wrap(i.toByteArray())
-      uuid = Some(new UUID(buffer.getLong(), buffer.getLong()))
-      return uuid.get
+      uuid = new UUID(buffer.getLong(), buffer.getLong())
+      uuid
     }
   }
 
   object UnpickledUUIDConverter extends TypeConverter[UUID] {
     def targetTypeTag = typeTag[UUID]
-    def convertPF = { case holder: UUIDHolder => holder.uuid.get }
+    def convertPF = { case holder: UUIDHolder => holder.uuid }
   }
 }
 
