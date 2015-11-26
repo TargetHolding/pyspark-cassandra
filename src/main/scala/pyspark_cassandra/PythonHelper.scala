@@ -34,11 +34,16 @@ import com.datastax.spark.connector.streaming.toDStreamFunctions
 import com.datastax.spark.connector.writer._
 
 class PythonHelper() {
+
   Pickling.register()
 
   implicit def toPickleableRDD(rdd: RDD[_]) = new PicklableRDD(rdd)
   implicit def toUnpickleableRDD(rdd: RDD[Array[Byte]]) = new UnpicklableRDD(rdd)
   implicit def toUnpickleableStream(dstream: DStream[Array[Byte]]) = new UnpicklableDStream(dstream)
+
+  /* ----------------------------------------------------------------------- */
+  /* loading from cassandra ------------------------------------------------ */
+  /* ----------------------------------------------------------------------- */
 
   def cassandraTable(jsc: JavaSparkContext, keyspace: String, table: String, readConf: Map[String, Any]): CassandraTableScanRDD[UnreadRow] =
     cassandraTable(jsc.sc, keyspace, table, readConf)
@@ -63,24 +68,19 @@ class PythonHelper() {
 
   def cassandraCount(rdd: CassandraRDD[UnreadRow]) = rdd.cassandraCount()
 
-  def pickleRows(rdd: CassandraRDD[UnreadRow]): RDD[Array[Byte]] = pickleRows(rdd, null)
-  def pickleRows(rdd: CassandraRDD[UnreadRow], rowFormat: Integer): RDD[Array[Byte]] = pickleRows(rdd, rowFormat, false)
-  def pickleRows(rdd: CassandraRDD[UnreadRow], rowFormat: Integer, keyed: Boolean) = {
-    // TODO implement keying by arbitrary columns, analogues to the spanBy(...) and spark-cassandra-connector
-    rdd.map(Format.parser(rowFormat, keyed)).pickle()
-  }
-
-  def pickleRows(rdd: CassandraJoinRDD[UnreadRow, UnreadRow]): RDD[Array[Byte]] = pickleRows(rdd, null)
-  def pickleRows(rdd: CassandraJoinRDD[UnreadRow, UnreadRow], rowFormat: Integer): RDD[Array[Byte]] = pickleRows(rdd, rowFormat, false)
-  def pickleRows(rdd: CassandraJoinRDD[UnreadRow, UnreadRow], rowFormat: Integer, keyed: Boolean) = {
-    rdd.map(new JoinedRowTransformer()).pickle()
-  }
-
-  def javaRDD(rdd: RDD[_]) = JavaRDD.fromRDD(rdd)
+  /* ----------------------------------------------------------------------- */
+  /* span by columns ------------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
 
   def spanBy(rdd: RDD[UnreadRow], columns: Array[String]) = {
     SpanBy.binary(rdd, columns)
   }
+
+  /* ----------------------------------------------------------------------- */
+  /* save to cassandra ----------------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
+
+  /* rdds ------------------------------------------------------------------ */
 
   def saveToCassandra(rdd: JavaRDD[Array[Byte]], keyspace: String, table: String, columns: Array[String],
     rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]): Unit =
@@ -96,6 +96,8 @@ class PythonHelper() {
     rdd.unpickle().saveToCassandra(keyspace, table, selectedColumns, conf)
   }
 
+  /* dstreams -------------------------------------------------------------- */
+
   def saveToCassandra(dstream: JavaDStream[Array[Byte]], keyspace: String, table: String, columns: Array[String],
     rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]): Unit =
     saveToCassandra(dstream.dstream, keyspace, table, columns, rowFormat, keyed, writeConf)
@@ -110,6 +112,12 @@ class PythonHelper() {
     dstream.unpickle().saveToCassandra(keyspace, table, selectedColumns, conf)
   }
 
+  /* ----------------------------------------------------------------------- */
+  /* join with cassandra tables -------------------------------------------- */
+  /* ----------------------------------------------------------------------- */
+
+  /* rdds ------------------------------------------------------------------ */
+
   def joinWithCassandraTable(rdd: JavaRDD[Array[Byte]], keyspace: String, table: String): CassandraJoinRDD[Any, UnreadRow] =
     joinWithCassandraTable(rdd.rdd, keyspace, table)
 
@@ -122,4 +130,23 @@ class PythonHelper() {
   def on(rdd: CassandraJoinRDD[Any, UnreadRow], columns: Array[String]) = {
     rdd.on(columnSelector(columns, PartitionKeyColumns))
   }
+
+  /* ----------------------------------------------------------------------- */
+  /* utilities for moving rdds from and to pyspark ------------------------- */
+  /* ----------------------------------------------------------------------- */
+
+  def pickleRows(rdd: CassandraRDD[UnreadRow]): RDD[Array[Byte]] = pickleRows(rdd, null)
+  def pickleRows(rdd: CassandraRDD[UnreadRow], rowFormat: Integer): RDD[Array[Byte]] = pickleRows(rdd, rowFormat, false)
+  def pickleRows(rdd: CassandraRDD[UnreadRow], rowFormat: Integer, keyed: Boolean) = {
+    // TODO implement keying by arbitrary columns, analogues to the spanBy(...) and spark-cassandra-connector
+    rdd.map(Format.parser(rowFormat, keyed)).pickle()
+  }
+
+  def pickleRows(rdd: CassandraJoinRDD[UnreadRow, UnreadRow]): RDD[Array[Byte]] = pickleRows(rdd, null)
+  def pickleRows(rdd: CassandraJoinRDD[UnreadRow, UnreadRow], rowFormat: Integer): RDD[Array[Byte]] = pickleRows(rdd, rowFormat, false)
+  def pickleRows(rdd: CassandraJoinRDD[UnreadRow, UnreadRow], rowFormat: Integer, keyed: Boolean) = {
+    rdd.map(new JoinedRowTransformer()).pickle()
+  }
+
+  def javaRDD(rdd: RDD[_]) = JavaRDD.fromRDD(rdd)
 }
