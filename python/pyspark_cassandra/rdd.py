@@ -20,6 +20,10 @@ from pyspark_cassandra.format import RowFormat, ColumnSelector
 from pyspark_cassandra.types import as_java_array, as_java_object, Row
 from pyspark_cassandra.util import helper
 
+import sys
+if sys.version_info > (3,):
+    long = int  # @ReservedAssignment
+
 
 try:
     import pandas as pd  # @UnusedImport, import used in SpanningRDD
@@ -155,7 +159,7 @@ class _CassandraRDD(RDD):
 
     def limit(self, limit):
         """Creates a CassandraRDD with the limit clause applied."""
-        return self._specialize('limit', limit)
+        return self._specialize('limit', long(limit))
     
 
     def cassandraCount(self):
