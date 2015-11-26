@@ -61,8 +61,7 @@ test-integration-matrix: \
 	test-integration-spark-1.5.1 \
 	test-integration-spark-1.5.2
 
-test-travis: \
-  install-cassandra-driver
+test-travis:
 	$(call test-integration-for-version,$$SPARK_VERSION,$$SPARK_PACKAGE_TYPE)
 
 test-integration-spark-1.4.1:
