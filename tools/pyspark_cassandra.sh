@@ -7,7 +7,7 @@ PYSPARK_DRIVER_PYTHON=ipython \
 	--conf spark.cassandra.connection.host="localhost" \
 	--driver-memory 2g \
 	--master local[*] \
-	--jars $DIR/target/scala-2.10/pyspark-cassandra-assembly-0.1.6.jar \
-	--py-files $DIR/target/pyspark_cassandra-0.1.6-py2.7.egg \
+	--jars $DIR/target/scala-2.10/pyspark-cassandra-assembly-0.2.0.jar \
+	--py-files $DIR/target/pyspark_cassandra-0.2.0-py2.7.egg \
 	$@
 
