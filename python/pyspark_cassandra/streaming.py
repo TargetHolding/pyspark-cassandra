@@ -32,6 +32,21 @@ def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, key
 
 
 def joinWithCassandraTable(dstream, keyspace, table, selected_columns=None, join_columns=None):
+    """Joins a DStream (a stream of RDDs) with a Cassandra table
+    
+    Arguments:
+        @param dstream(DStream)
+        The DStream to join. Equals to self when invoking joinWithCassandraTable on a monkey patched RDD.
+        @param keyspace(string):
+            The keyspace to join on.
+        @param table(string):
+            The CQL table to join on.
+        @param selected_columns(string):
+            The columns to select from the Cassandra table.
+        @param join_columns(string):
+            The columns used to join on from the Cassandra table.
+    """
+
     ssc = dstream._ssc
     ctx = ssc._sc
     gw = ctx._gateway

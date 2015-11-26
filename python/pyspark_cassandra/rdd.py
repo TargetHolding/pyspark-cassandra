@@ -179,6 +179,7 @@ class _CassandraRDD(RDD):
 
 
     def cassandraCount(self):
+        """Lets Cassandra perform a count, instead of loading data to Spark"""
         return self._crdd.cassandraCount()
 
 
@@ -324,7 +325,7 @@ def joinWithCassandraTable(left_rdd, keyspace, table):
 
         Arguments:
         @param left_rdd(RDD):
-            The RDD to join on. Equals to self when invoking joinWithCassandraTable on a monkey patched RDD.
+            The RDD to join. Equals to self when invoking joinWithCassandraTable on a monkey patched RDD.
         @param keyspace(string):
             The keyspace to join on
         @param table(string):

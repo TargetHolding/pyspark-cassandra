@@ -25,7 +25,11 @@ This project was initially forked from https://github.com/Parsely/pyspark-cassan
 Compatibility
 -------------
 
-Currently PySpark Cassandra has been succesfully used with Spark version 1.2.0, 1.2.1, 1.2.2, 1.3.0 and 1.3.1 and DataStax Spark Cassandra Connector version 1.2. Feedback on (in-)compatibility with other versions is much appreciated.
+Currently PySpark Cassandra has been succesfully used with Spark version 1.4.0 and 1.4.1 and DataStax Spark Cassandra Connector version 1.4. The tests pass when using Spark 1.5.{0,1,2}. However, as per the documentation of the Spark Cassandra Connector from Datastax on which this package builds, this support is not guaranteed.
+
+Use an older version of PySpark Cassandra with Spark 1.2.0, 1.2.1, 1.2.2, 1.3.0 and 1.3.1.
+
+Feedback on (in-)compatibility is much appreciated.
 
 
 
@@ -91,7 +95,7 @@ make dist
 
 This creates 1) a fat jar with the Spark Cassandra Connector and additional classes for bridging Spark and PySpark for Cassandra data and 2) a python source distribution at:
 
-* `target/pyspark_cassandra-<version>.jar`
+* `target/scala-2.10/pyspark-cassandra-assembly-<version>.jar`
 * `target/pyspark_cassandra_<version>-<python version>.egg`.
 
 
@@ -107,8 +111,6 @@ The PySpark Cassandra API aims to stay close to the Cassandra Spark Connector AP
 The primary representation of CQL rows in PySpark Cassandra is the ROW format. However `sc.cassandraTable(...)` supports the `row_format` argument which can be any of the constants from `RowFormat`:
 * `DICT`: The default layout, a CQL row is represented as a python dict with the CQL row columns as keys.
 * `TUPLE`: A CQL row is represented as a python tuple with the values in CQL table column order / the order of the selected columns.
-* `KV_DICTS`: A tuple of two python dicts represents the primary key columns and remaining (value) columns respectively.
-* `KV_TUPLES`: A tuple of two python tuples represents the primary key columns and remaining (value) columns respectively. The values in the tuple are in the CQL table column order / the order of the selected columns.
 * `ROW`: A pyspark_cassandra.Row object representing a CQL row.
 
 Column values are related between CQL and python as follows:
@@ -184,13 +186,18 @@ A `CassandraRDD` is very similar to a regular `RDD` in pyspark. It is extended w
 
 * ``select(*columns)``: Creates a CassandraRDD with the select clause applied.
 * ``where(clause, *args)``: Creates a CassandraRDD with a CQL where clause applied. The clause can contain ? markers with the arguments supplied as *args.
+* ``limit(num)``: Creates a CassandraRDD with the limit clause applied.
+* ``take(num)``: Takes at most ``num`` records from the Cassandra table. Note that if ``limit()`` was invoked before ``take()`` a normal pyspark ``take()`` is performed. Otherwise, first limit is set and _then_ a ``take()`` is performed.
+* ``cassandraCount()``: Lets Cassandra perform a count, instead of loading the data to Spark first.
 * ``saveToCassandra(...)``: As above, but the keyspace and/or table __may__ be omitted to save to the same keyspace and/or table. 
 * ``spanBy(*columns)``: Groups rows by the given columns without shuffling. 
+* ``joinWithCassandraTable(rdd, keyspace, table)``: Join an RDD with a Cassandra table on the partition key. Use .on(...) to specifiy other columns to join on. .select(...), .where(...) and .limit(...) can be used as well.
 
 
 ### pyspark_cassandra.streaming
 
-When importing ```pyspark_cassandra.streaming``` the method ``saveToCassandra(...)``` is made available on DStreams.
+When importing ```pyspark_cassandra.streaming``` the method ``saveToCassandra(...)``` is made available on DStreams. Also support for joining with a Cassandra table is added:
+* ``joinWithCassandraTable(keyspace, table, selected_columns, join_columns)``: 
 
 
 Examples
@@ -261,10 +268,28 @@ ssc \
 ssc.start()
 ```
 
+Joining with Cassandra:
+
+```python
+joined = rdd \
+    .joinWithCassandraTable('keyspace', 'accounts') \
+    .on('id') \
+    .select('e-mail', 'followers')
+
+for left, right in joined:
+    ...
+```
+
+Or with a DStream:
+
+```python
+joined = dstream.joinWithCassandraTable(self.keyspace, self.table, ['e-mail', 'followers'], ['id'])
+```
+
 
 Problems / ideas?
 -----------------
-Feel free to use the issue tracker propose new functionality and / or report bugs.
+Feel free to use the issue tracker propose new functionality and / or report bugs. In case of bugs please provides some code to reproduce the issue or at least some context information such as software used, CQL schema, etc.
 
 
 
