@@ -12,8 +12,11 @@ env:
   - SPARK_VERSION=1.5.1 SPARK_PACKAGE_TYPE=hadoop2.6
   - SPARK_VERSION=1.5.2 SPARK_PACKAGE_TYPE=hadoop2.6
 
-install:
-  - pip install cassandra-driver
+addons:
+  apt:
+    packages:
+    - python-virtualenv
+    - python-pip
   
 services:
   - cassandra
@@ -24,6 +27,7 @@ sudo: false
 
 cache:
   directories:
+    - venv
     - $HOME/.m2
     - $HOME/.ivy2
     - $HOME/.sbt
