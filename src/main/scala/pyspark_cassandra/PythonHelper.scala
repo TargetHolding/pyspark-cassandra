@@ -14,41 +14,24 @@
 
 package pyspark_cassandra
 
-import java.lang.Boolean
-import java.util.{List, Map}
+import pyspark_cassandra.Utils._
 
-import scala.collection.JavaConversions.{asScalaBuffer, mapAsScalaMap}
+import java.lang.Boolean
+import java.util.{ List, Map }
+
+import scala.collection.JavaConversions._
 
 import org.apache.spark.SparkContext
-import org.apache.spark.api.java.{JavaRDD, JavaSparkContext}
+import org.apache.spark.api.java.{ JavaRDD, JavaSparkContext }
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.api.java.JavaDStream
 import org.apache.spark.streaming.dstream.DStream
 
 import com.datastax.driver.core.ConsistencyLevel
-import com.datastax.spark.connector.{
-  AllColumns,
-  BytesInBatch,
-  ColumnName,
-  ColumnSelector,
-  PartitionKeyColumns,
-  SomeColumns,
-  toRDDFunctions,
-  toSparkContextFunctions
-}
-import com.datastax.spark.connector.rdd.{
-  CassandraJoinRDD,
-  CassandraRDD,
-  CassandraTableScanRDD,
-  ReadConf
-}
+import com.datastax.spark.connector._
+import com.datastax.spark.connector.rdd._
 import com.datastax.spark.connector.streaming.toDStreamFunctions
-import com.datastax.spark.connector.writer.{
-  BatchGroupingKey,
-  TTLOption,
-  TimestampOption,
-  WriteConf
-}
+import com.datastax.spark.connector.writer._
 
 class PythonHelper() {
   Pickling.register()
@@ -138,55 +121,5 @@ class PythonHelper() {
 
   def on(rdd: CassandraJoinRDD[Any, UnreadRow], columns: Array[String]) = {
     rdd.on(columnSelector(columns, PartitionKeyColumns))
-  }
-
-  def columnSelector(columns: Array[String], default: ColumnSelector = AllColumns) = {
-    if (columns != null && columns.length > 0)
-      SomeColumns(columns.map { ColumnName(_) }: _*)
-    else
-      default
-  }
-
-  private def parseReadConf(sc: SparkContext, readConf: Map[String, Any]) = {
-    var conf = ReadConf.fromSparkConf(sc.getConf)
-
-    if (readConf != null)
-      for ((k, v) <- readConf) {
-        (k, v) match {
-          case ("split_count", v: Int) => conf = conf.copy(splitCount = Option(v))
-          case ("split_size", v: Int) => conf = conf.copy(splitSizeInMB = v)
-          case ("fetch_size", v: Int) => conf = conf.copy(fetchSizeInRows = v)
-          case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
-          case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
-          case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
-          case _ => throw new IllegalArgumentException(s"Read conf key $k with value $v unsupported")
-        }
-      }
-
-    conf
-  }
-
-  private def parseWriteConf(writeConf: Map[String, Any]) = {
-    var conf = WriteConf()
-
-    if (writeConf != null)
-      for ((k, v) <- writeConf) {
-        (k, v) match {
-          case ("batch_size", v: Int) => conf = conf.copy(batchSize = BytesInBatch(v))
-          case ("batch_buffer_size", v: Int) => conf = conf.copy(batchGroupingBufferSize = v)
-          case ("batch_grouping_key", "replica_set") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
-          case ("batch_grouping_key", "partition") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
-          case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
-          case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
-          case ("parallelism_level", v: Int) => conf = conf.copy(parallelismLevel = v)
-          case ("throughput_mibps", v: Number) => conf = conf.copy(throughputMiBPS = v.doubleValue())
-          case ("ttl", v: Int) => conf = conf.copy(ttl = TTLOption.constant(v))
-          case ("timestamp", v: Number) => conf = conf.copy(timestamp = TimestampOption.constant(v.longValue()))
-          case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
-          case _ => throw new IllegalArgumentException(s"Write conf key $k with value $v unsupported")
-        }
-      }
-
-    conf
   }
 }

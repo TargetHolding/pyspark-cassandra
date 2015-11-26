@@ -18,13 +18,26 @@ import java.nio.ByteBuffer
 import java.util.{ List => JList, Map => JMap }
 
 import scala.reflect.ClassTag
-import scala.collection.JavaConversions.asScalaBuffer
+import scala.collection.JavaConversions._
 import scala.collection.mutable.Buffer
 
-import com.datastax.driver.core.{ DataType, ProtocolVersion }
+import org.apache.spark.SparkContext
+
+import com.datastax.driver.core.{ ConsistencyLevel, DataType, ProtocolVersion }
+import com.datastax.spark.connector._
+import com.datastax.spark.connector.rdd._
+import com.datastax.spark.connector.writer._
 
 object Utils {
   def deserialize(dt: DataType, b: ByteBuffer, pv: ProtocolVersion) = dt.deserialize(b, pv)
+  /*
+   * // When moving tospark cassandra connector 1.5.x :
+   * import com.datastax.driver.core.CodecRegistry
+   * ...
+   * def deserialize(dt: DataType, b: ByteBuffer, pv: ProtocolVersion) = codec(dt).deserialize(b, pv)
+   * def codec(dt: DataType) = CodecRegistry.DEFAULT_INSTANCE.codecFor(dt)
+   * ...
+  */
 
   def asArray[T: ClassTag](c: Any): Array[T] = c match {
     case a: Array[T] => a
@@ -41,17 +54,57 @@ object Utils {
     case l: JList[T] => asScalaBuffer(l).toSeq
     case _ => throw new IllegalArgumentException(c.getClass() + " can't be converted to a Seq")
   }
-}
 
-// when moving tospark cassandra connector 1.5.x :
+  def columnSelector(columns: Array[String], default: ColumnSelector = AllColumns) = {
+    if (columns != null && columns.length > 0)
+      SomeColumns(columns.map { ColumnName(_) }: _*)
+    else
+      default
+  }
 
-/*
-import com.datastax.driver.core.CodecRegistry
-object Utils {
-  def deserialize(dt: DataType, b: ByteBuffer, pv: ProtocolVersion) = codec(dt).deserialize(b, pv)
-  def codec(dt: DataType) = CodecRegistry.DEFAULT_INSTANCE.codecFor(dt)
+  def parseReadConf(sc: SparkContext, readConf: JMap[String, Any]) = {
+    var conf = ReadConf.fromSparkConf(sc.getConf)
+
+    if (readConf != null)
+      for ((k, v) <- readConf) {
+        (k, v) match {
+          case ("split_count", v: Int) => conf = conf.copy(splitCount = Option(v))
+          case ("split_size", v: Int) => conf = conf.copy(splitSizeInMB = v)
+          case ("fetch_size", v: Int) => conf = conf.copy(fetchSizeInRows = v)
+          case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
+          case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
+          case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
+          case _ => throw new IllegalArgumentException(s"Read conf key $k with value $v unsupported")
+        }
+      }
+
+    conf
+  }
+
+  def parseWriteConf(writeConf: JMap[String, Any]) = {
+    var conf = WriteConf()
+
+    if (writeConf != null)
+      for ((k, v) <- writeConf) {
+        (k, v) match {
+          case ("batch_size", v: Int) => conf = conf.copy(batchSize = BytesInBatch(v))
+          case ("batch_buffer_size", v: Int) => conf = conf.copy(batchGroupingBufferSize = v)
+          case ("batch_grouping_key", "replica_set") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
+          case ("batch_grouping_key", "partition") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
+          case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
+          case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
+          case ("parallelism_level", v: Int) => conf = conf.copy(parallelismLevel = v)
+          case ("throughput_mibps", v: Number) => conf = conf.copy(throughputMiBPS = v.doubleValue())
+          case ("ttl", v: Int) => conf = conf.copy(ttl = TTLOption.constant(v))
+          case ("timestamp", v: Number) => conf = conf.copy(timestamp = TimestampOption.constant(v.longValue()))
+          case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
+          case _ => throw new IllegalArgumentException(s"Write conf key $k with value $v unsupported")
+        }
+      }
+
+    conf
+  }
 }
-*/
 
 object Format extends Enumeration {
   val DICT, TUPLE, ROW = Value
