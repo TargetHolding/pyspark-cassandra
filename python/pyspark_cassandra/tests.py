@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from _functools import partial
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime, timedelta
 from decimal import Decimal
 import string
 import sys
@@ -148,6 +148,36 @@ class SimpleTypesTest(SimpleTypesTestBase):
 
     def test_uuid(self):
         self.read_write_test('uuid', uuid.UUID('22dadfd0-b971-11e4-a856-85a08dca5bbf'))
+
+
+
+class SelectiveSaveTest(SimpleTypesTestBase):
+    def _save_and_get(self, *row):
+        columns = ['key', 'text']
+        self.sc.parallelize(row).saveToCassandra(self.keyspace, self.table, columns=columns)
+        rdd = self.rdd().select(*columns)
+        self.assertEqual(rdd.count(), 1)
+        return rdd.first()
+
+
+    def test_row(self):
+        row = Row(key='selective-save-test-row', int=2, text='a', boolean=False)
+        read = self._save_and_get(row)
+
+        for k in ['key', 'text']:
+            self.assertEqual(getattr(row, k), getattr(read, k))
+        for k in ['boolean', 'int']:
+            self.assertIsNone(getattr(read, k, None))
+
+
+    def test_dict(self):
+        row = dict(key='selective-save-test-row', int=2, text='a', boolean=False)
+        read = self._save_and_get(row)
+
+        for k in ['key', 'text']:
+            self.assertEqual(row[k], read[k])
+        for k in ['boolean', 'int']:
+            self.assertIsNone(getattr(read, k, None))
 
 
 
@@ -440,6 +470,6 @@ class RegressionTest(CassandraTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(StreamingTest)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(SelectiveSaveTest)
     # unittest.TextTestRunner().run(suite)
 
