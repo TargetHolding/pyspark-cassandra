@@ -147,7 +147,7 @@ class _CassandraRDD(RDD):
 
     def select(self, *columns):
         """Creates a CassandraRDD with the select clause applied."""
-        return self._specialize('select', columns)
+        return self._specialize('select', [str(c) for c in columns])
 
 
     def where(self, clause, *args):
