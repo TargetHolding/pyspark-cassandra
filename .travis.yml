@@ -27,3 +27,6 @@ sudo: false
 cache:
   directories:
     - venv
+    - $HOME/.m2
+    - $HOME/.ivy2
+    - $HOME/.sbt
