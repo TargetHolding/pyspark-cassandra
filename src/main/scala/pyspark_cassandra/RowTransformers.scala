@@ -71,6 +71,7 @@ class JoinedRowTransformer extends (((Any, UnreadRow)) => (Any, Any)) with Seria
   def apply(pair: (Any, UnreadRow)): (Any, Any) = {
     val format = Format.detect(pair._1)
     val parser = Format.parser(format._1, format._2)
-    return (pair._1, parser.apply(pair._2))
+    val parsed = parser.apply(pair._2)
+    return (pair._1, parsed)
   }
 }

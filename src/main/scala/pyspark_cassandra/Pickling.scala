@@ -1,47 +1,62 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package pyspark_cassandra
 
 import java.io.OutputStream
 import java.math.BigInteger
-import java.net.Inet4Address
-import java.net.Inet6Address
-import java.net.InetAddress
+import java.net.{ Inet4Address, Inet6Address, InetAddress }
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
-import java.util.ArrayList
-import java.util.Collection
-import java.util.HashMap
-import java.util.{ List => JList }
-import java.util.{ Map => JMap }
-import java.util.UUID
-import scala.collection.JavaConversions.asScalaBuffer
-import scala.collection.JavaConversions.collectionAsScalaIterable
-import scala.collection.JavaConversions.iterableAsScalaIterable
-import scala.collection.JavaConverters
+import java.util.{
+  ArrayList,
+  Collection,
+  HashMap,
+  List => JList,
+  Map => JMap,
+  UUID
+}
+
+import scala.reflect.ClassTag
+import scala.collection.JavaConversions.{
+  asScalaBuffer,
+  bufferAsJavaList,
+  collectionAsScalaIterable,
+  iterableAsScalaIterable,
+  mapAsJavaMap,
+  seqAsJavaList
+}
 import scala.collection.immutable.HashMap.HashTrieMap
 import scala.collection.immutable.List
-import scala.collection.immutable.Map.Map1
-import scala.collection.immutable.Map.Map2
-import scala.collection.immutable.Map.Map3
-import scala.collection.immutable.Map.Map4
-import scala.collection.immutable.Map.WithDefault
-import scala.collection.mutable.Buffer
-import scala.collection.mutable.WrappedArray
-import scala.reflect.runtime.universe
+import scala.collection.immutable.Map.{ Map1, Map2, Map3, Map4, WithDefault }
+import scala.collection.mutable.{Buffer,WrappedArray}
 import scala.reflect.runtime.universe.typeTag
+
 import com.datastax.driver.core.ProtocolVersion
 import com.datastax.driver.core.{ UDTValue => DriverUDTValue }
 import com.datastax.spark.connector.UDTValue
 import com.datastax.spark.connector.types.TypeConverter
+
 import net.razorvine.pickle.IObjectConstructor
 import net.razorvine.pickle.IObjectPickler
 import net.razorvine.pickle.Opcodes
 import net.razorvine.pickle.PickleUtils
 import net.razorvine.pickle.Pickler
 import net.razorvine.pickle.Unpickler
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.DStream
-import scala.reflect.ClassTag
-import scala.collection.JavaConversions
 
 object Pickling {
   def register() = {
@@ -120,7 +135,8 @@ class BatchPickler(batchSize: Int = 1000)
 
 class BatchUnpickler extends (Array[Byte] => Seq[Any]) with Serializable {
   def apply(in: Array[Byte]): Seq[Any] = {
-    new Unpickler().loads(in).asInstanceOf[java.util.List[Any]].toSeq
+    val unpickled = new Unpickler().loads(in)
+    Utils.asSeq(unpickled)
   }
 }
 
@@ -143,16 +159,10 @@ trait StructPickler extends IObjectPickler {
 
 trait StructUnpickler extends IObjectConstructor {
   def construct(args: Array[AnyRef]): Object = {
-    val fields = asArray[String](args(0))
-    val values = asArray[AnyRef](args(1))
+    val fields = Utils.asArray[String](args(0))
+    val values = Utils.asArray[AnyRef](args(1))
 
     construct(fields, values)
-  }
-
-  def asArray[T: ClassTag](l: Any): Array[T] = l match {
-    case a: Array[T] => a
-    case l: List[T] => l.toArray
-    case l: JList[T] =>  JavaConversions.asScalaBuffer(l).toArray
   }
 
   def construct(fields: Array[String], values: Array[AnyRef]): Object
@@ -294,9 +304,9 @@ object ListPickler extends IObjectPickler {
     pickler.save(
       o match {
         case c: Collection[_] => c
-        case b: Buffer[_] => JavaConverters.bufferAsJavaListConverter(b).asJava
-        case s: Seq[_] => JavaConverters.seqAsJavaListConverter(s).asJava
-        case p: Product => JavaConverters.seqAsJavaListConverter(p.productIterator.toSeq).asJava
+        case b: Buffer[_] => bufferAsJavaList(b)
+        case s: Seq[_] => seqAsJavaList(s)
+        case p: Product => seqAsJavaList(p.productIterator.toSeq)
       })
   }
 }
@@ -306,7 +316,7 @@ object MapPickler extends IObjectPickler {
     pickler.save(
       o match {
         case m: JMap[_, _] => m
-        case m: Map[_, _] => JavaConverters.mapAsJavaMapConverter(m).asJava
+        case m: Map[_, _] => mapAsJavaMap(m)
       })
   }
 }

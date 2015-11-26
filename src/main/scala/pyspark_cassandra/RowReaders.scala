@@ -14,12 +14,10 @@
 
 package pyspark_cassandra
 
-import com.datastax.driver.core.ProtocolVersion
-import com.datastax.driver.core.{ Row => DriverRow }
+import com.datastax.driver.core.{ ProtocolVersion, Row => DriverRow }
 import com.datastax.spark.connector.ColumnRef
 import com.datastax.spark.connector.cql.TableDef
-import com.datastax.spark.connector.rdd.reader.RowReader
-import com.datastax.spark.connector.rdd.reader.RowReaderFactory
+import com.datastax.spark.connector.rdd.reader.{RowReader, RowReaderFactory}
 
 /** A container for a 'raw' row from the java driver, to be deserialized. */
 case class UnreadRow(row: DriverRow, columnNames: Array[String], table: TableDef, protocolVersion: ProtocolVersion) {

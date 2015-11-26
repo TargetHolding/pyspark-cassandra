@@ -1,35 +1,54 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package pyspark_cassandra
 
-import java.util.List
-import java.util.Map
-import scala.collection.JavaConversions.asScalaBuffer
-import scala.collection.JavaConversions.mapAsScalaMap
-import org.apache.spark.SparkContext
-import org.apache.spark.api.java.JavaRDD
-import org.apache.spark.api.java.JavaSparkContext
-import org.apache.spark.rdd.RDD
-import com.datastax.driver.core.ConsistencyLevel
-import com.datastax.spark.connector.AllColumns
-import com.datastax.spark.connector.BytesInBatch
-import com.datastax.spark.connector.ColumnName
-import com.datastax.spark.connector.SomeColumns
-import com.datastax.spark.connector.rdd.CassandraRDD
-import com.datastax.spark.connector.rdd.CassandraTableScanRDD
-import com.datastax.spark.connector.rdd.ReadConf
-import com.datastax.spark.connector.toRDDFunctions
-import com.datastax.spark.connector.toSparkContextFunctions
-import com.datastax.spark.connector.streaming.toDStreamFunctions
-import com.datastax.spark.connector.writer.BatchGroupingKey
-import com.datastax.spark.connector.writer.TTLOption
-import com.datastax.spark.connector.writer.TimestampOption
-import com.datastax.spark.connector.writer.WriteConf
-import com.datastax.spark.connector.rdd.CassandraJoinRDD
-import com.datastax.spark.connector.PartitionKeyColumns
-import com.datastax.spark.connector.ColumnSelector
-import com.datastax.spark.connector.rdd.CassandraJoinRDD
-import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.api.java.JavaDStream
 import java.lang.Boolean
+import java.util.{List, Map}
+
+import scala.collection.JavaConversions.{asScalaBuffer, mapAsScalaMap}
+
+import org.apache.spark.SparkContext
+import org.apache.spark.api.java.{JavaRDD, JavaSparkContext}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.streaming.api.java.JavaDStream
+import org.apache.spark.streaming.dstream.DStream
+
+import com.datastax.driver.core.ConsistencyLevel
+import com.datastax.spark.connector.{
+  AllColumns,
+  BytesInBatch,
+  ColumnName,
+  ColumnSelector,
+  PartitionKeyColumns,
+  SomeColumns,
+  toRDDFunctions,
+  toSparkContextFunctions
+}
+import com.datastax.spark.connector.rdd.{
+  CassandraJoinRDD,
+  CassandraRDD,
+  CassandraTableScanRDD,
+  ReadConf
+}
+import com.datastax.spark.connector.streaming.toDStreamFunctions
+import com.datastax.spark.connector.writer.{
+  BatchGroupingKey,
+  TTLOption,
+  TimestampOption,
+  WriteConf
+}
 
 class PythonHelper() {
   Pickling.register()
@@ -97,7 +116,7 @@ class PythonHelper() {
   def saveToCassandra(dstream: JavaDStream[Array[Byte]], keyspace: String, table: String, columns: Array[String],
     rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]): Unit =
     saveToCassandra(dstream.dstream, keyspace, table, columns, rowFormat, keyed, writeConf)
-    
+
   def saveToCassandra(dstream: DStream[Array[Byte]], keyspace: String, table: String, columns: Array[String],
     rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]) = {
 
@@ -171,4 +190,3 @@ class PythonHelper() {
     conf
   }
 }
-

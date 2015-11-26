@@ -15,13 +15,27 @@
 package pyspark_cassandra
 
 import java.nio.ByteBuffer
-import java.util.{ Map => JMap }
+import java.util.{ List => JList, Map => JMap }
 
-import com.datastax.driver.core.DataType
-import com.datastax.driver.core.ProtocolVersion
+import scala.reflect.ClassTag
+import scala.collection.JavaConversions.asScalaBuffer
+
+import com.datastax.driver.core.{ DataType, ProtocolVersion }
 
 object Utils {
   def deserialize(dt: DataType, b: ByteBuffer, pv: ProtocolVersion) = dt.deserialize(b, pv)
+
+  def asArray[T: ClassTag](c: Any): Array[T] = c match {
+    case a: Array[T] => a
+    case l: List[T] => l.toArray
+    case l: JList[T] => asScalaBuffer(l).toArray
+  }
+
+  def asSeq[T: ClassTag](c : Any) : Seq[T] = c match {
+    case a: Array[T] => a
+    case l: List[T] => l
+    case l: JList[T] => asScalaBuffer(l).toSeq
+  }
 }
 
 // when moving tospark cassandra connector 1.5.x :

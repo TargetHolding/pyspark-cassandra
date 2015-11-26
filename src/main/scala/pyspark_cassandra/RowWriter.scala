@@ -17,13 +17,11 @@ package pyspark_cassandra
 import java.util.Map
 import java.lang.Boolean
 
-import scala.collection.IndexedSeq
-import scala.collection.Seq
+import scala.collection.{IndexedSeq, Seq}
 
 import com.datastax.spark.connector.ColumnRef
 import com.datastax.spark.connector.cql.TableDef
-import com.datastax.spark.connector.writer.RowWriter
-import com.datastax.spark.connector.writer.RowWriterFactory
+import com.datastax.spark.connector.writer.{RowWriter, RowWriterFactory}
 
 class GenericRowWriterFactory(format: Integer, keyed: Boolean = false) extends RowWriterFactory[Any] {
   def rowWriter(table: TableDef, selectedColumns: IndexedSeq[ColumnRef]): RowWriter[Any] = {

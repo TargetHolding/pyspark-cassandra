@@ -21,8 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
 
-import com.datastax.driver.core.DataType
-import com.datastax.driver.core.ProtocolVersion
+import com.datastax.driver.core.{ DataType, ProtocolVersion }
 import com.datastax.spark.connector.toRDDFunctions
 
 case class DataFrame(names: Array[String], types: Array[String], values: Seq[ArrayBuffer[Any]])
