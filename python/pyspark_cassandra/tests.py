@@ -269,24 +269,25 @@ class UDTTest(CassandraTestCase):
     def setUpClass(cls):
         super(UDTTest, cls).setUpClass()
         
-        for name, udt in cls.types.items():
+        cls.udt_support = cls.session.cluster.protocol_version >= 4
+        if cls.udt_support:
+            for name, udt in cls.types.items():
+                cls.session.execute('''
+                    CREATE TYPE IF NOT EXISTS %s (
+                        %s
+                    )
+                ''' % (name, ',\n\t'.join('%s %s' % (field, ftype) for field, ftype in udt.items())))
+            
             cls.session.execute('''
-                CREATE TYPE IF NOT EXISTS %s (
-                    %s
+                CREATE TABLE IF NOT EXISTS %s (
+                    key text primary key, %s
                 )
-            ''' % (name, ',\n\t'.join('%s %s' % (field, ftype) for field, ftype in udt.items())))
-        
-        cls.session.execute('''
-            CREATE TABLE IF NOT EXISTS %s (
-                key text primary key, %s
-            )
-        ''' % (cls.table, ', '.join('%s frozen<%s>' % (name, name) for name in cls.types)))
-
-    @classmethod
-    def tearDownClass(cls):
-        super(UDTTest, cls).tearDownClass()
+            ''' % (cls.table, ', '.join('%s frozen<%s>' % (name, name) for name in cls.types)))
 
     def setUp(self):
+        if not self.udt_support:
+            self.skipTest("testing with Cassandra < 2.2, can't test with UDT's")
+        
         super(UDTTest, self).setUp()
         self.session.execute('TRUNCATE %s' % self.table)
 
