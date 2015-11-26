@@ -20,6 +20,8 @@ services:
 
 script: make clean dist test-travis
 
+sudo: true
+
 cache:
   directories:
     - $HOME/.m2
