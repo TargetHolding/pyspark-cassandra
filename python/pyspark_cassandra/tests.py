@@ -181,6 +181,24 @@ class SelectiveSaveTest(SimpleTypesTestBase):
 
 
 
+class LimitAndTakeTest(SimpleTypesTestBase):
+    size = 1000
+
+    def setUp(self):
+        super(LimitAndTakeTest, self).setUp()
+        data = self.sc.range(0, self.size).map(lambda i: {'key':i, 'int':i})
+        data.saveToCassandra(self.keyspace, self.table)
+
+    def test_limit(self):
+        data = self.rdd()
+
+        for i in (5, 10, 100, 1000, 1500):
+            l = min(i, self.size)
+            self.assertEqual(len(data.take(i)), l)
+            self.assertEqual(len(data.limit(i).collect()), l)
+            self.assertEqual(len(data.limit(i * 2).take(i)), l)
+
+
 class FormatTest(SimpleTypesTestBase):
     expected = Row(key='format-test', int=2, text='a')
 
@@ -470,6 +488,6 @@ class RegressionTest(CassandraTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(SelectiveSaveTest)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(LimitAndTakeTest)
     # unittest.TextTestRunner().run(suite)
 

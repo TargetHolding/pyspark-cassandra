@@ -109,6 +109,7 @@ class _CassandraRDD(RDD):
         self.table = table
         self.row_format = row_format
         self.read_conf = ReadConf.build(read_conf, **read_conf_kwargs)
+        self._limit = None
 
         # this jrdd is for compatibility with pyspark.rdd.RDD
         # while allowing this constructor to be use for type checking etc
@@ -160,7 +161,21 @@ class _CassandraRDD(RDD):
 
     def limit(self, limit):
         """Creates a CassandraRDD with the limit clause applied."""
+        self._limit = limit
         return self._specialize('limit', long(limit))
+
+
+    def take(self, num):
+        """Takes at most 'num' records from the Cassandra table.
+        
+        Note that if limit() was invoked before take() a normal pyspark take()
+        is performed. Otherwise, first limit is set and _then_ a take() is
+        performed. 
+        """
+        if self._limit:
+            return super(_CassandraRDD, self).take(num)
+        else:
+            return self.limit(num).take(num)
 
 
     def cassandraCount(self):
