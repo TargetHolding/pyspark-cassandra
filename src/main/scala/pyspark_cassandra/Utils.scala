@@ -15,6 +15,7 @@
 package pyspark_cassandra
 
 import java.nio.ByteBuffer
+import java.lang.{ Boolean => JBoolean }
 import java.util.{ List => JList, Map => JMap }
 
 import scala.reflect.ClassTag
@@ -47,12 +48,19 @@ object Utils {
     case _ => throw new IllegalArgumentException(c.getClass() + " can't be converted to an Array")
   }
 
-  def asSeq[T: ClassTag](c : Any) : Seq[T] = c match {
+  def asSeq[T: ClassTag](c: Any): Seq[T] = c match {
     case a: Array[T] => a
     case b: Buffer[T] => b
     case l: List[T] => l
     case l: JList[T] => asScalaBuffer(l).toSeq
     case _ => throw new IllegalArgumentException(c.getClass() + " can't be converted to a Seq")
+  }
+
+  def asBooleanOption(v: JBoolean) = {
+    if (v == null)
+      None
+    else
+      Some(v.booleanValue())
   }
 
   def columnSelector(columns: Array[String], default: ColumnSelector = AllColumns) = {
@@ -62,45 +70,51 @@ object Utils {
       default
   }
 
-  def parseReadConf(sc: SparkContext, readConf: JMap[String, Any]) = {
+  def parseReadConf(sc: SparkContext, readConf: Option[JMap[String, Any]]) = {
     var conf = ReadConf.fromSparkConf(sc.getConf)
 
-    if (readConf != null)
-      for ((k, v) <- readConf) {
-        (k, v) match {
-          case ("split_count", v: Int) => conf = conf.copy(splitCount = Option(v))
-          case ("split_size", v: Int) => conf = conf.copy(splitSizeInMB = v)
-          case ("fetch_size", v: Int) => conf = conf.copy(fetchSizeInRows = v)
-          case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
-          case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
-          case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
-          case _ => throw new IllegalArgumentException(s"Read conf key $k with value $v unsupported")
+    readConf match {
+      case Some(rc) =>
+        for ((k, v) <- rc) {
+          (k, v) match {
+            case ("split_count", v: Int) => conf = conf.copy(splitCount = Option(v))
+            case ("split_size", v: Int) => conf = conf.copy(splitSizeInMB = v)
+            case ("fetch_size", v: Int) => conf = conf.copy(fetchSizeInRows = v)
+            case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
+            case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
+            case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
+            case _ => throw new IllegalArgumentException(s"Read conf key $k with value $v unsupported")
+          }
         }
-      }
+      case None => // do nothing
+    }
 
     conf
   }
 
-  def parseWriteConf(writeConf: JMap[String, Any]) = {
+  def parseWriteConf(writeConf: Option[JMap[String, Any]]) = {
     var conf = WriteConf()
 
-    if (writeConf != null)
-      for ((k, v) <- writeConf) {
-        (k, v) match {
-          case ("batch_size", v: Int) => conf = conf.copy(batchSize = BytesInBatch(v))
-          case ("batch_buffer_size", v: Int) => conf = conf.copy(batchGroupingBufferSize = v)
-          case ("batch_grouping_key", "replica_set") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
-          case ("batch_grouping_key", "partition") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
-          case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
-          case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
-          case ("parallelism_level", v: Int) => conf = conf.copy(parallelismLevel = v)
-          case ("throughput_mibps", v: Number) => conf = conf.copy(throughputMiBPS = v.doubleValue())
-          case ("ttl", v: Int) => conf = conf.copy(ttl = TTLOption.constant(v))
-          case ("timestamp", v: Number) => conf = conf.copy(timestamp = TimestampOption.constant(v.longValue()))
-          case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
-          case _ => throw new IllegalArgumentException(s"Write conf key $k with value $v unsupported")
+    writeConf match {
+      case Some(wc) =>
+        for ((k, v) <- wc) {
+          (k, v) match {
+            case ("batch_size", v: Int) => conf = conf.copy(batchSize = BytesInBatch(v))
+            case ("batch_buffer_size", v: Int) => conf = conf.copy(batchGroupingBufferSize = v)
+            case ("batch_grouping_key", "replica_set") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
+            case ("batch_grouping_key", "partition") => conf = conf.copy(batchGroupingKey = BatchGroupingKey.ReplicaSet)
+            case ("consistency_level", v: Int) => conf = conf.copy(consistencyLevel = ConsistencyLevel.values()(v))
+            case ("consistency_level", v) => conf = conf.copy(consistencyLevel = ConsistencyLevel.valueOf(v.toString))
+            case ("parallelism_level", v: Int) => conf = conf.copy(parallelismLevel = v)
+            case ("throughput_mibps", v: Number) => conf = conf.copy(throughputMiBPS = v.doubleValue())
+            case ("ttl", v: Int) => conf = conf.copy(ttl = TTLOption.constant(v))
+            case ("timestamp", v: Number) => conf = conf.copy(timestamp = TimestampOption.constant(v.longValue()))
+            case ("metrics_enabled", v: Boolean) => conf = conf.copy(taskMetricsEnabled = v)
+            case _ => throw new IllegalArgumentException(s"Write conf key $k with value $v unsupported")
+          }
         }
-      }
+      case None => // do nothing
+    }
 
     conf
   }
@@ -109,17 +123,16 @@ object Utils {
 object Format extends Enumeration {
   val DICT, TUPLE, ROW = Value
 
-  def parser(format: Integer): FromUnreadRow[_] = parser(format, false)
-  def parser(format: Format.Value): FromUnreadRow[_] = parser(format, false)
+  def apply(format: Integer): Option[Format.Value] =
+    if (format != null) Some(Format(format)) else None
 
-  def parser(format: Integer, keyed: Boolean): FromUnreadRow[_] = {
-    val fmt = if (format == null)
-      Format.ROW
-    else
-      Format(format)
-
-    parser(fmt, keyed)
+  def parser(example: Any): FromUnreadRow[_] = {
+    val format = detect(example)
+    return Format.parser(format._1, format._2)
   }
+
+  def parser(format: Option[Format.Value], keyed: Option[Boolean]): FromUnreadRow[_] =
+    parser(format.getOrElse(Format.ROW), keyed.getOrElse(false))
 
   def parser(format: Format.Value, keyed: Boolean): FromUnreadRow[_] = {
     (format, keyed) match {

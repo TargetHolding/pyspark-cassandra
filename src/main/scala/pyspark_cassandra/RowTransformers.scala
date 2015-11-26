@@ -33,7 +33,11 @@ case class Row(fields: Seq[String], values: Seq[AnyRef])
 
 object ToRow extends FromUnreadRow[Row] {
   override def apply(row: UnreadRow): Row = {
-    Row(row.columnNames, row.columnNames.map { c => row.deserialize(c) })
+    Row(
+      row.columnNames,
+      row.columnNames.map {
+        c => row.deserialize(c)
+      })
   }
 }
 
@@ -69,9 +73,7 @@ object ToKVDicts extends ToKV[Map[String, Object]] {
 
 class JoinedRowTransformer extends (((Any, UnreadRow)) => (Any, Any)) with Serializable {
   def apply(pair: (Any, UnreadRow)): (Any, Any) = {
-    val format = Format.detect(pair._1)
-    val parser = Format.parser(format._1, format._2)
-    val parsed = parser.apply(pair._2)
+    val parsed = Format.parser(pair._1).apply(pair._2)
     (pair._1, parsed)
   }
 }

@@ -14,6 +14,7 @@
 
 package pyspark_cassandra
 
+import pyspark_cassandra.Utils._
 import java.io.OutputStream
 import java.math.BigInteger
 import java.net.{ Inet4Address, Inet6Address, InetAddress }
@@ -27,36 +28,28 @@ import java.util.{
   Map => JMap,
   UUID
 }
-
 import scala.reflect.ClassTag
-import scala.collection.JavaConversions.{
-  asScalaBuffer,
-  bufferAsJavaList,
-  collectionAsScalaIterable,
-  iterableAsScalaIterable,
-  mapAsJavaMap,
-  seqAsJavaList
-}
+import scala.collection.JavaConversions._
 import scala.collection.immutable.HashMap.HashTrieMap
 import scala.collection.immutable.List
 import scala.collection.immutable.Map.{ Map1, Map2, Map3, Map4, WithDefault }
 import scala.collection.mutable.{ ArraySeq, Buffer, WrappedArray }
 import scala.reflect.runtime.universe.typeTag
-
 import com.datastax.driver.core.ProtocolVersion
 import com.datastax.driver.core.{ UDTValue => DriverUDTValue }
 import com.datastax.spark.connector.UDTValue
 import com.datastax.spark.connector.types.TypeConverter
-
-import net.razorvine.pickle.IObjectConstructor
-import net.razorvine.pickle.IObjectPickler
-import net.razorvine.pickle.Opcodes
-import net.razorvine.pickle.PickleUtils
-import net.razorvine.pickle.Pickler
-import net.razorvine.pickle.Unpickler
-
+import net.razorvine.pickle.{
+  IObjectConstructor,
+  IObjectPickler,
+  Opcodes,
+  PickleUtils,
+  Pickler,
+  Unpickler
+}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.DStream
+import java.io.NotSerializableException
 
 object Pickling {
   def register() = {
@@ -138,7 +131,7 @@ class BatchPickler(batchSize: Int = 1000)
 class BatchUnpickler extends (Array[Byte] => Seq[Any]) with Serializable {
   def apply(in: Array[Byte]): Seq[Any] = {
     val unpickled = new Unpickler().loads(in)
-    Utils.asSeq(unpickled)
+    asSeq(unpickled)
   }
 }
 
@@ -161,8 +154,8 @@ trait StructPickler extends IObjectPickler {
 
 trait StructUnpickler extends IObjectConstructor {
   def construct(args: Array[AnyRef]): Object = {
-    val fields = Utils.asSeq[String](args(0))
-    val values = Utils.asSeq[AnyRef](args(1))
+    val fields = asSeq[String](args(0))
+    val values = asSeq[AnyRef](args(1))
 
     construct(fields, values)
   }
@@ -202,8 +195,8 @@ object UDTValuePickler extends StructPickler {
 
 object UDTValueUnpickler extends StructUnpickler {
   def construct(fields: Seq[String], values: Seq[AnyRef]) = {
-    val f = Utils.asArray[String](fields)
-    val v = Utils.asArray[AnyRef](values)
+    val f = asArray[String](fields)
+    val v = asArray[AnyRef](values)
     UDTValue(f, v)
   }
 }
@@ -313,6 +306,7 @@ object ListPickler extends IObjectPickler {
         case b: Buffer[_] => bufferAsJavaList(b)
         case s: Seq[_] => seqAsJavaList(s)
         case p: Product => seqAsJavaList(p.productIterator.toSeq)
+        case _ => throw new NotSerializableException(o.toString())
       })
   }
 }

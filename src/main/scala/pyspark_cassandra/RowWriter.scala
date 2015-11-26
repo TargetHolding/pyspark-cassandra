@@ -14,29 +14,29 @@
 
 package pyspark_cassandra
 
-import java.util.Map
-import java.lang.Boolean
+import java.util.{ Map => JMap }
 
-import scala.collection.{IndexedSeq, Seq}
+import scala.collection.{ IndexedSeq, Seq }
 
 import com.datastax.spark.connector.ColumnRef
 import com.datastax.spark.connector.cql.TableDef
-import com.datastax.spark.connector.writer.{RowWriter, RowWriterFactory}
+import com.datastax.spark.connector.writer.{ RowWriter, RowWriterFactory }
 
-class GenericRowWriterFactory(format: Integer, keyed: Boolean = false) extends RowWriterFactory[Any] {
+class GenericRowWriterFactory(format: Option[Format.Value], keyed: Option[Boolean]) extends RowWriterFactory[Any] {
   def rowWriter(table: TableDef, selectedColumns: IndexedSeq[ColumnRef]): RowWriter[Any] = {
     new GenericRowWriter(format, keyed, selectedColumns)
   }
 }
 
-class GenericRowWriter(format: Integer, keyed: Boolean, columns: IndexedSeq[ColumnRef]) extends RowWriter[Any] {
+class GenericRowWriter(format: Option[Format.Value], keyed: Option[Boolean], columns: IndexedSeq[ColumnRef]) extends RowWriter[Any] {
   def columnNames: Seq[String] = columns.map { _.columnName }
   def indexedColumns = columnNames.zipWithIndex
 
   def readColumnValues(row: Any, buffer: Array[Any]): Unit = {
-    val fmt = (
-      if (format == null) Format.detect(row)
-      else (Format(format), if (keyed != null) keyed else false))
+    val fmt = (format, keyed) match {
+      case (Some(x: Format.Value), Some(y: Boolean)) => (x, y)
+      case _ => Format.detect(row)
+    }
 
     fmt match {
       case (Format.TUPLE, false) => readAsTuple(row, buffer)
@@ -63,7 +63,7 @@ class GenericRowWriter(format: Integer, keyed: Boolean, columns: IndexedSeq[Colu
   }
 
   def readAsDict(row: Any, buffer: Array[Any]) = {
-    val v = row.asInstanceOf[Map[Any, Any]]
+    val v = row.asInstanceOf[JMap[Any, Any]]
 
     indexedColumns.map {
       case (s, i) => buffer(i) = v.get(s)
@@ -71,7 +71,7 @@ class GenericRowWriter(format: Integer, keyed: Boolean, columns: IndexedSeq[Colu
   }
 
   def readAsKVDicts(row: Any, buffer: Array[Any]) = {
-    val Array(k, v) = row.asInstanceOf[Array[Map[Any, Any]]]
+    val Array(k, v) = row.asInstanceOf[Array[JMap[Any, Any]]]
 
     indexedColumns.map {
       case (c, i) => {

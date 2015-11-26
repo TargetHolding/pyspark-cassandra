@@ -17,7 +17,7 @@ package pyspark_cassandra
 import pyspark_cassandra.Utils._
 
 import java.lang.Boolean
-import java.util.{ List, Map }
+import java.util.{ List => JList, Map => JMap }
 
 import scala.collection.JavaConversions._
 
@@ -45,16 +45,13 @@ class PythonHelper() {
   /* loading from cassandra ------------------------------------------------ */
   /* ----------------------------------------------------------------------- */
 
-  def cassandraTable(jsc: JavaSparkContext, keyspace: String, table: String, readConf: Map[String, Any]): CassandraTableScanRDD[UnreadRow] =
-    cassandraTable(jsc.sc, keyspace, table, readConf)
-
-  def cassandraTable(sc: SparkContext, keyspace: String, table: String, readConf: Map[String, Any]) = {
-    val conf = parseReadConf(sc, readConf)
-    implicit var rrf = new DeferringRowReaderFactory()
-    sc.cassandraTable(keyspace, table).withReadConf(conf)
+  def cassandraTable(jsc: JavaSparkContext, keyspace: String, table: String, readConf: JMap[String, Any]) = {
+    val conf = parseReadConf(jsc.sc, Some(readConf))
+    implicit val rrf = new DeferringRowReaderFactory()
+    jsc.sc.cassandraTable(keyspace, table).withReadConf(conf)
   }
 
-  def select(rdd: CassandraRDD[UnreadRow], columns: List[String]) = {
+  def select(rdd: CassandraRDD[UnreadRow], columns: JList[String]) = {
     rdd.select(columns.map { new ColumnName(_) }: _*)
   }
 
@@ -62,7 +59,7 @@ class PythonHelper() {
     rdd.limit(lim)
   }
 
-  def where(rdd: CassandraRDD[UnreadRow], cql: String, values: List[String]) = {
+  def where(rdd: CassandraRDD[UnreadRow], cql: String, values: JList[String]) = {
     rdd.where(cql, values: _*)
   }
 
@@ -83,33 +80,25 @@ class PythonHelper() {
   /* rdds ------------------------------------------------------------------ */
 
   def saveToCassandra(rdd: JavaRDD[Array[Byte]], keyspace: String, table: String, columns: Array[String],
-    rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]): Unit =
-    saveToCassandra(rdd.rdd, keyspace, table, columns, rowFormat, keyed, writeConf)
-
-  def saveToCassandra(rdd: RDD[Array[Byte]], keyspace: String, table: String, columns: Array[String],
-    rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]) = {
+    rowFormat: Integer, keyed: Boolean, writeConf: JMap[String, Any]) = {
 
     val selectedColumns = columnSelector(columns)
-    val conf = parseWriteConf(writeConf)
+    val conf = parseWriteConf(Some(writeConf))
 
-    implicit val rwf = new GenericRowWriterFactory(rowFormat, keyed)
-    rdd.unpickle().saveToCassandra(keyspace, table, selectedColumns, conf)
+    implicit val rwf = new GenericRowWriterFactory(Format(rowFormat), asBooleanOption(keyed))
+    rdd.rdd.unpickle().saveToCassandra(keyspace, table, selectedColumns, conf)
   }
 
   /* dstreams -------------------------------------------------------------- */
 
   def saveToCassandra(dstream: JavaDStream[Array[Byte]], keyspace: String, table: String, columns: Array[String],
-    rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]): Unit =
-    saveToCassandra(dstream.dstream, keyspace, table, columns, rowFormat, keyed, writeConf)
-
-  def saveToCassandra(dstream: DStream[Array[Byte]], keyspace: String, table: String, columns: Array[String],
-    rowFormat: Integer, keyed: Boolean, writeConf: Map[String, Any]) = {
+    rowFormat: Integer, keyed: Boolean, writeConf: JMap[String, Any]) = {
 
     val selectedColumns = columnSelector(columns)
-    val conf = parseWriteConf(writeConf)
+    val conf = parseWriteConf(Some(writeConf))
 
-    implicit val rwf = new GenericRowWriterFactory(rowFormat, keyed)
-    dstream.unpickle().saveToCassandra(keyspace, table, selectedColumns, conf)
+    implicit val rwf = new GenericRowWriterFactory(Format(rowFormat), asBooleanOption(keyed))
+    dstream.dstream.unpickle().saveToCassandra(keyspace, table, selectedColumns, conf)
   }
 
   /* ----------------------------------------------------------------------- */
@@ -118,13 +107,10 @@ class PythonHelper() {
 
   /* rdds ------------------------------------------------------------------ */
 
-  def joinWithCassandraTable(rdd: JavaRDD[Array[Byte]], keyspace: String, table: String): CassandraJoinRDD[Any, UnreadRow] =
-    joinWithCassandraTable(rdd.rdd, keyspace, table)
-
-  def joinWithCassandraTable(rdd: RDD[Array[Byte]], keyspace: String, table: String) = {
-    implicit val rwf = new GenericRowWriterFactory(null)
+  def joinWithCassandraTable(rdd: JavaRDD[Array[Byte]], keyspace: String, table: String): CassandraJoinRDD[Any, UnreadRow] = {
+    implicit val rwf = new GenericRowWriterFactory(None, None)
     implicit val rrf = new DeferringRowReaderFactory()
-    rdd.unpickle().joinWithCassandraTable(keyspace, table)
+    rdd.rdd.unpickle().joinWithCassandraTable(keyspace, table)
   }
 
   def on(rdd: CassandraJoinRDD[Any, UnreadRow], columns: Array[String]) = {
@@ -133,37 +119,40 @@ class PythonHelper() {
 
   /* dstreams -------------------------------------------------------------- */
 
-  def joinWithCassandraTable(dstream: JavaDStream[Array[Byte]], keyspace: String, table: String, selectedColumns: Array[String], joinColumns: Array[String]) : DStream[(Any, UnreadRow)] =
-    joinWithCassandraTable(dstream.dstream, keyspace, table, selectedColumns, joinColumns)
-
-  def joinWithCassandraTable(dstream: DStream[Array[Byte]], keyspace: String, table: String, selectedColumns: Array[String], joinColumns: Array[String]) = {
+  def joinWithCassandraTable(dstream: JavaDStream[Array[Byte]], keyspace: String, table: String, selectedColumns: Array[String], joinColumns: Array[String]): DStream[(Any, UnreadRow)] = {
     val columns = columnSelector(selectedColumns)
     val joinOn = columnSelector(joinColumns, PartitionKeyColumns)
-    implicit val rwf = new GenericRowWriterFactory(null)
+    implicit val rwf = new GenericRowWriterFactory(None, None)
     implicit val rrf = new DeferringRowReaderFactory()
-    dstream.unpickle().joinWithCassandraTable(keyspace, table, columns, joinOn)
+    dstream.dstream.unpickle().joinWithCassandraTable(keyspace, table, columns, joinOn)
   }
 
   /* ----------------------------------------------------------------------- */
   /* utilities for moving rdds and dstreams from and to pyspark ------------ */
   /* ----------------------------------------------------------------------- */
 
-  def pickleRows(rdd: CassandraRDD[UnreadRow]): RDD[Array[Byte]] = pickleRows(rdd, null)
-  def pickleRows(rdd: CassandraRDD[UnreadRow], rowFormat: Integer): RDD[Array[Byte]] = pickleRows(rdd, rowFormat, false)
+  def pickleRows(rdd: CassandraRDD[UnreadRow]): RDD[Array[Byte]] =
+    pickleRows(rdd, null)
+
+  def pickleRows(rdd: CassandraRDD[UnreadRow], rowFormat: Integer): RDD[Array[Byte]] =
+    pickleRows(rdd, rowFormat, false)
+
   def pickleRows(rdd: CassandraRDD[UnreadRow], rowFormat: Integer, keyed: Boolean) = {
     // TODO implement keying by arbitrary columns, analogues to the spanBy(...) and spark-cassandra-connector
-    rdd.map(Format.parser(rowFormat, keyed)).pickle()
+    val parser = Format.parser(Format(rowFormat), asBooleanOption(keyed))
+    rdd.map(parser).pickle()
   }
 
-  def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow]): RDD[Array[Byte]] = pickleRows(rdd, null)
-  def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow], rowFormat: Integer): RDD[Array[Byte]] = pickleRows(rdd, rowFormat, false)
-  def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow], rowFormat: Integer, keyed: Boolean) = {
+  def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow], rowFormat: Integer, keyed: Boolean): RDD[Array[Byte]] =
+      pickleRows(rdd)
+
+  def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow], rowFormat: Integer): RDD[Array[Byte]] =
+    pickleRows(rdd)
+
+  def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow]) =
     rdd.map(new JoinedRowTransformer()).pickle()
-  }
 
-  def pickleRows(dstream : DStream[(Any, UnreadRow)]) : DStream[Array[Byte]] = pickleRows(dstream, null)
-  def pickleRows(dstream : DStream[(Any, UnreadRow)], format: Integer) : DStream[Array[Byte]] = pickleRows(dstream, format, false)
-  def pickleRows(dstream : DStream[(Any, UnreadRow)], format: Integer, keyed: Boolean) = {
+  def pickleRows(dstream: DStream[(Any, UnreadRow)]) = {
     dstream.map(new JoinedRowTransformer()).transform((rdd, time) => rdd.pickle())
   }
 
