@@ -426,7 +426,7 @@ class RegressionTest(CassandraTestCase):
 
 
 if __name__ == '__main__':
-    # unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(StreamingTest)
-    unittest.TextTestRunner().run(suite)
+    unittest.main()
+    # suite = unittest.TestLoader().loadTestsFromTestCase(StreamingTest)
+    # unittest.TextTestRunner().run(suite)
     
