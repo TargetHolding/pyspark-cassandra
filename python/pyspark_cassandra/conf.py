@@ -12,10 +12,10 @@ class _Conf(object):
             return conf
         else:
             return cls(**kwargs)
-    
+
     def settings(self):
         return { k:v for k, v in self.__dict__.items() if v is not None }
-    
+
     def __str__(self):
         return '%s(%s)' % (
             self.__class__.__name__,
@@ -33,7 +33,7 @@ class ReadConf(_Conf):
         self.fetch_size = fetch_size
         self.consistency_level = consistency_level
         self.metrics_enabled = metrics_enabled
-        
+
 
 class WriteConf(_Conf):
     def __init__(self, batch_size=None, batch_buffer_size=None, batch_grouping_key=None, consistency_level=None,
@@ -74,14 +74,14 @@ class WriteConf(_Conf):
         self.parallelism_level = parallelism_level
         self.throughput_mibps = throughput_mibps
 
-        # convert time delta in ttl in seconds        
+        # convert time delta in ttl in seconds
         if ttl and isinstance(ttl, timedelta):
             ttl = int(ttl.total_seconds())
         self.ttl = ttl
-        
+
         # convert date or datetime objects to a timestamp in milliseconds since the UNIX epoch
         if timestamp and (isinstance(timestamp, datetime) or isinstance(timestamp, date)):
             timestamp = int((timestamp - timestamp.__class__(1970, 1, 1)).total_seconds() * 1000 * 1000)
         self.timestamp = timestamp
-        
+
         self.metrics_enabled = metrics_enabled

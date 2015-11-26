@@ -1,9 +1,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,40 +47,40 @@ class Struct(tuple):
         struct = tuple.__new__(cls)
         struct.__FIELDS__ = kwargs
         return struct
-    
-    
+
+
     def asDict(self):
         return self.__dict__()
 
     def __dict__(self):
         return self.__FIELDS__
-    
+
     def __iter__(self):
         return iter(self.__FIELDS__.values())
-    
+
     @property
     def _fields(self):
         return self.keys()
-    
+
     def keys(self):
         return self.__FIELDS__.keys()
 
     def values(self):
         return self.__FIELDS__.values()
-        
-        
+
+
     def __len__(self):
         return len(self.__FIELDS__)
-    
+
     def __eq__(self, other):
         try:
             return self.__FIELDS__.__eq__(other.__FIELDS__)
         except AttributeError:
             return False
-        
+
     def __ne__(self, other):
         return not self == other
-    
+
 
     def __add__(self, other):
         d = dict(self.__FIELDS__)
@@ -91,27 +91,27 @@ class Struct(tuple):
         d = { k:v for k, v in self.__FIELDS__.items() if k in other }
         return self.__class__(**d)
 
-    
+
     def __contains__(self, name):
         return name in self.__FIELDS__
 
 
     def __setitem__(self, name, value):
         self.__setattr__(name, value)
-        
+
     def __delitem__(self, name):
         self.__delattr__(name)
 
     def __getitem__(self, name):
         return self.__getattr__(name)
-    
-    
+
+
     def __getattr__(self, name):
         try:
             return self.__FIELDS__[name]
         except KeyError:
             raise AttributeError(name)
-    
+
     def __setattr__(self, name, value):
         if name == "__FIELDS__":
             tuple.__setattr__(self, name, value)
@@ -123,11 +123,11 @@ class Struct(tuple):
             del self.__FIELDS__[name]
         except KeyError:
             raise AttributeError(name)
-        
-    
+
+
     def __getstate__(self):
         return self.__dict__()
-        
+
     def __reduce__(self):
         keys = self.__FIELDS__.keys()
         values = [self.__FIELDS__[k] for k in keys]
@@ -144,7 +144,7 @@ class Struct(tuple):
 class Row(Struct):
     def _creator(self):
         return _create_row
-    
+
 class UDT(Struct):
     def _creator(self):
         return _create_udt
@@ -162,16 +162,16 @@ def _create_spanning_dataframe(cnames, ctypes, cvalues):
         
         Note that cnames, ctypes and cvalues are expected to have equal length.
     '''
-    
+
     if len(cnames) != len(ctypes) or len(ctypes) != len(cvalues):
         raise ValueError('The lengths of cnames, ctypes and cvalues must equal')
 
     # convert the column values to numpy arrays if numpy is available
-    # otherwise use lists    
+    # otherwise use lists
     global np
     convert = _to_nparrays if np else _to_list
     arrays = { n : convert(t, v) for n, t, v in zip(cnames, ctypes, cvalues) }
-    
+
     # if pandas is available, provide the arrays / lists as DataFrame
     # otherwise use pyspark_cassandra.Row
     global pd
@@ -198,9 +198,9 @@ def _to_nparrays(ctype, cvalue):
 
 def _to_list(ctype, cvalue):
     if isinstance(cvalue, (bytes, bytearray)):
-        return _decode_primitives(ctype, cvalue)        
+        return _decode_primitives(ctype, cvalue)
     elif hasattr(cvalue, '__len__'):
-        return cvalue 
+        return cvalue
     else:
         return list(cvalue)
 
@@ -210,13 +210,13 @@ ZERO = timedelta(0)
 class UTC(tzinfo):
     def utcoffset(self, dt):
         return ZERO
-    
+
     def tzname(self, dt):
         return "UTC"
-    
+
     def dst(self, dt):
         return ZERO
-    
+
     def __repr__(self):
         return self.__class__.__name__
 
@@ -231,16 +231,16 @@ _numpy_to_struct_formats = {
     '>f8': '>d',
     '>M8[ms]': '>q',
 }
-        
+
 def _decode_primitives(ctype, cvalue):
     fmt = _numpy_to_struct_formats.get(ctype)
-    
+
     # if unsupported, return as the list if bytes it was
     if not fmt:
-        return cvalue        
-    
+        return cvalue
+
     primitives = _unpack(fmt, cvalue)
-    
+
     if(ctype == '>M8[ms]'):
         return [datetime.utcfromtimestamp(l).replace(tzinfo=UTC) for l in primitives]
     else:
@@ -251,9 +251,9 @@ def _unpack(fmt, cvalue):
     stride = struct.calcsize(fmt)
     if len(cvalue) % stride != 0:
         raise ValueError('number of bytes must be a multiple of %s for format %s' % (stride, fmt))
-    
-    return [struct.unpack(cvalue[o:o+stride]) for o in range(len(cvalue) / stride, stride)]
-    
+
+    return [struct.unpack(cvalue[o:o + stride]) for o in range(len(cvalue) / stride, stride)]
+
 
 
 def as_java_array(gateway, java_type, iterable):
@@ -261,7 +261,7 @@ def as_java_array(gateway, java_type, iterable):
 
     if iterable is None:
         return None
-    
+
     java_type = gateway.jvm.__getattr__(java_type)
     lst = list(iterable)
     arr = gateway.new_array(java_type, len(lst))
@@ -280,37 +280,37 @@ def as_java_object(gateway, obj):
 
     if obj is None:
         return None
-    
+
     t = type(obj)
-    
+
     if issubclass(t, (bool, int, float, str)):
         return obj
-    
+
     elif issubclass(t, UDT):
         field_names = as_java_array(gateway, "String", obj.keys())
         field_values = as_java_array(gateway, "Object", obj.values())
         udt = gateway.jvm.UDTValueConverter(field_names, field_values)
         return udt.toConnectorType()
-    
+
     elif issubclass(t, datetime):
         timestamp = int(mktime(obj.timetuple()) * 1000)
         return gateway.jvm.java.util.Date(timestamp)
-    
+
     elif issubclass(t, (dict, Mapping)):
         hash_map = gateway.jvm.java.util.HashMap()
         for (k, v) in obj.items(): hash_map[k] = v
         return hash_map
-    
+
     elif issubclass(t, (set, Set)):
         hash_set = gateway.jvm.java.util.HashSet()
         for e in obj: hash_set.add(e)
         return hash_set
-    
+
     elif issubclass(t, (list, Iterable)):
         array_list = gateway.jvm.java.util.ArrayList()
         for e in obj: array_list.append(e)
         return array_list
-    
+
     else:
         return obj
 
