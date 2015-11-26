@@ -24,11 +24,14 @@ from cassandra.cluster import Cluster
 from cassandra.util import uuid_from_time
 
 from pyspark import SparkConf
+from pyspark.accumulators import AddingAccumulatorParam
 from pyspark.streaming.context import StreamingContext
+
 from pyspark_cassandra import CassandraSparkContext, RowFormat, Row, UDT
-from pyspark_cassandra import streaming
 import pyspark_cassandra
+import pyspark_cassandra.streaming
 from pyspark_cassandra.conf import ReadConf, WriteConf
+from itertools import chain
 
 
 class CassandraTestCase(unittest.TestCase):
@@ -89,14 +92,14 @@ class SimpleTypesTestBase(CassandraTestCase):
     def setUpClass(cls):
         super(SimpleTypesTestBase, cls).setUpClass()
         cls.session.execute('''
-            CREATE TABLE IF NOT EXISTS simple_types (
+            CREATE TABLE IF NOT EXISTS ''' + cls.table + ''' (
                 key text primary key, %s
             )
         ''' % ', '.join('{0} {0}'.format(t) for t in cls.simple_types))
 
     def setUp(self):
         super(SimpleTypesTestBase, self).setUp()
-        self.session.execute('TRUNCATE simple_types')
+        self.session.execute('TRUNCATE ' + self.table)
 
 
 class SimpleTypesTest(SimpleTypesTestBase):
@@ -148,107 +151,6 @@ class SimpleTypesTest(SimpleTypesTestBase):
 
     def test_uuid(self):
         self.read_write_test('uuid', uuid.UUID('22dadfd0-b971-11e4-a856-85a08dca5bbf'))
-
-
-
-class SelectiveSaveTest(SimpleTypesTestBase):
-    def _save_and_get(self, *row):
-        columns = ['key', 'text']
-        self.sc.parallelize(row).saveToCassandra(self.keyspace, self.table, columns=columns)
-        rdd = self.rdd().select(*columns)
-        self.assertEqual(rdd.count(), 1)
-        return rdd.first()
-
-
-    def test_row(self):
-        row = Row(key='selective-save-test-row', int=2, text='a', boolean=False)
-        read = self._save_and_get(row)
-
-        for k in ['key', 'text']:
-            self.assertEqual(getattr(row, k), getattr(read, k))
-        for k in ['boolean', 'int']:
-            self.assertIsNone(getattr(read, k, None))
-
-
-    def test_dict(self):
-        row = dict(key='selective-save-test-row', int=2, text='a', boolean=False)
-        read = self._save_and_get(row)
-
-        for k in ['key', 'text']:
-            self.assertEqual(row[k], read[k])
-        for k in ['boolean', 'int']:
-            self.assertIsNone(getattr(read, k, None))
-
-
-
-class LimitAndTakeTest(SimpleTypesTestBase):
-    size = 1000
-
-    def setUp(self):
-        super(LimitAndTakeTest, self).setUp()
-        data = self.sc.range(0, self.size).map(lambda i: {'key':i, 'int':i})
-        data.saveToCassandra(self.keyspace, self.table)
-
-    def test_limit(self):
-        data = self.rdd()
-
-        for i in (5, 10, 100, 1000, 1500):
-            l = min(i, self.size)
-            self.assertEqual(len(data.take(i)), l)
-            self.assertEqual(len(data.limit(i).collect()), l)
-            self.assertEqual(len(data.limit(i * 2).take(i)), l)
-
-
-class FormatTest(SimpleTypesTestBase):
-    expected = Row(key='format-test', int=2, text='a')
-
-    def setUp(self):
-        super(FormatTest, self).setUp()
-        self.sc.parallelize([self.expected]).saveToCassandra(self.keyspace, self.table)
-
-    def read_as(self, row_format, keyed):
-        table = self.rdd(row_format=row_format)
-        if keyed:
-            table = table.by_primary_key()
-        table = table.where('key=?', self.expected.key)
-        return table.first()
-
-    def assert_rowtype(self, row_format, row_type, keyed=False):
-        row = self.read_as(row_format, keyed)
-        self.assertEqual(type(row), row_type)
-        return row
-
-    def assert_kvtype(self, row_format, kv_type):
-        row = self.assert_rowtype(row_format, tuple, keyed=True)
-        self.assertEqual(len(row), 2)
-        k, v = row
-        self.assertEqual(type(k), kv_type)
-        self.assertEqual(type(v), kv_type)
-        return k, v
-
-    def test_tuple(self):
-        row = self.assert_rowtype(RowFormat.TUPLE, tuple)
-        self.assertEqual(self.expected.key, row[0])
-
-    def test_kvtuple(self):
-        k, _ = self.assert_kvtype(RowFormat.TUPLE, tuple)
-        self.assertEqual(self.expected.key, k[0])
-
-    def test_dict(self):
-        row = self.assert_rowtype(RowFormat.DICT, dict)
-        self.assertEqual(self.expected.key, row['key'])
-
-    def test_kvdict(self):
-        k, _ = self.assert_kvtype(RowFormat.DICT, dict)
-        self.assertEqual(self.expected.key, k['key'])
-
-    def test_row(self):
-        row = self.assert_rowtype(RowFormat.ROW, pyspark_cassandra.Row)
-        self.assertEqual(self.expected.key, row.key)
-
-    def test_kvrow(self):
-        k, _ = self.assert_kvtype(RowFormat.ROW, pyspark_cassandra.Row)
-        self.assertEqual(self.expected.key, k.key)
 
 
 
@@ -371,31 +273,105 @@ class UDTTest(CassandraTestCase):
 
 
 
-class JoinTest(SimpleTypesTestBase):
-    records = {
-       str(c) : str(i) for i, c in
-       enumerate(string.ascii_lowercase)
-    }
+class SelectiveSaveTest(SimpleTypesTestBase):
+    def _save_and_get(self, *row):
+        columns = ['key', 'text']
+        self.sc.parallelize(row).saveToCassandra(self.keyspace, self.table, columns=columns)
+        rdd = self.rdd().select(*columns)
+        self.assertEqual(rdd.count(), 1)
+        return rdd.first()
+
+
+    def test_row(self):
+        row = Row(key='selective-save-test-row', int=2, text='a', boolean=False)
+        read = self._save_and_get(row)
+
+        for k in ['key', 'text']:
+            self.assertEqual(getattr(row, k), getattr(read, k))
+        for k in ['boolean', 'int']:
+            self.assertIsNone(getattr(read, k, None))
+
+
+    def test_dict(self):
+        row = dict(key='selective-save-test-row', int=2, text='a', boolean=False)
+        read = self._save_and_get(row)
+
+        for k in ['key', 'text']:
+            self.assertEqual(row[k], read[k])
+        for k in ['boolean', 'int']:
+            self.assertIsNone(getattr(read, k, None))
+
+
+
+class LimitAndTakeTest(SimpleTypesTestBase):
+    size = 1000
 
     def setUp(self):
-        super(JoinTest, self).setUp()
-        self.session.execute('TRUNCATE %s' % self.table)
+        super(LimitAndTakeTest, self).setUp()
+        data = self.sc.range(0, self.size).map(lambda i: {'key':i, 'int':i})
+        data.saveToCassandra(self.keyspace, self.table)
 
-        for k, v in self.records.items():
-            self.session.execute('INSERT INTO ' + self.table + ' (key, text) values (%s, %s)', (k, v))
+    def test_limit(self):
+        data = self.rdd()
 
-    def test_join_with_cassandra(self):
-        rdd = self.sc.parallelize(self.records.items())
-        self.assertEqual(dict(rdd.collect()), self.records)
+        for i in (5, 10, 100, 1000, 1500):
+            l = min(i, self.size)
+            self.assertEqual(len(data.take(i)), l)
+            self.assertEqual(len(data.limit(i).collect()), l)
+            self.assertEqual(len(data.limit(i * 2).take(i)), l)
 
-        joined = rdd.joinWithCassandraTable(self.keyspace, self.table).on('key').select('key', 'text').cache()
-        self.assertEqual(dict(joined.keys().collect()), dict(joined.values().collect()))
-        for (k, v) in joined.collect():
-            self.assertEqual(k, v)
 
-        # TODO test
-        # .where()
-        # .limit()
+class FormatTest(SimpleTypesTestBase):
+    expected = Row(key='format-test', int=2, text='a')
+
+    def setUp(self):
+        super(FormatTest, self).setUp()
+        self.sc.parallelize([self.expected]).saveToCassandra(self.keyspace, self.table)
+
+    def read_as(self, row_format, keyed):
+        table = self.rdd(row_format=row_format)
+        if keyed:
+            table = table.by_primary_key()
+        table = table.where('key=?', self.expected.key)
+        return table.first()
+
+    def assert_rowtype(self, row_format, row_type, keyed=False):
+        row = self.read_as(row_format, keyed)
+        self.assertEqual(type(row), row_type)
+        return row
+
+    def assert_kvtype(self, row_format, kv_type):
+        row = self.assert_rowtype(row_format, tuple, keyed=True)
+        self.assertEqual(len(row), 2)
+        k, v = row
+        self.assertEqual(type(k), kv_type)
+        self.assertEqual(type(v), kv_type)
+        return k, v
+
+    def test_tuple(self):
+        row = self.assert_rowtype(RowFormat.TUPLE, tuple)
+        self.assertEqual(self.expected.key, row[0])
+
+    def test_kvtuple(self):
+        k, _ = self.assert_kvtype(RowFormat.TUPLE, tuple)
+        self.assertEqual(self.expected.key, k[0])
+
+    def test_dict(self):
+        row = self.assert_rowtype(RowFormat.DICT, dict)
+        self.assertEqual(self.expected.key, row['key'])
+
+    def test_kvdict(self):
+        k, _ = self.assert_kvtype(RowFormat.DICT, dict)
+        self.assertEqual(self.expected.key, k['key'])
+
+    def test_row(self):
+        row = self.assert_rowtype(RowFormat.ROW, pyspark_cassandra.Row)
+        self.assertEqual(self.expected.key, row.key)
+
+    def test_kvrow(self):
+        k, _ = self.assert_kvtype(RowFormat.ROW, pyspark_cassandra.Row)
+        self.assertEqual(self.expected.key, k.key)
+
 
 
 class ConfTest(SimpleTypesTestBase):
@@ -435,34 +411,106 @@ class ConfTest(SimpleTypesTestBase):
 
 
 class StreamingTest(SimpleTypesTestBase):
+    interval = .1
+
+    size = 10
+    count = 3
+
+    rows = [
+        [
+            {'key': str(j * size + i), 'text': str(j * size + i)}
+            for i in range(size)
+        ]
+        for j in range(count)
+    ]
+
     @classmethod
     def setUpClass(cls):
         super(StreamingTest, cls).setUpClass()
-        cls.ssc = StreamingContext(cls.sc, 1)
+        cls.ssc = StreamingContext(cls.sc, cls.interval)
 
-    def test_streaming(self):
-        size = 10
-        count = 3
+    def setUp(self):
+        super(StreamingTest, self).setUp()
+        self.rdds = list(map(self.sc.parallelize, self.rows))
+        self.stream = self.ssc.queueStream(self.rdds)
 
-        rows = [
-            [
-                {'key': str(j * size + i), 'text': str(j * size + i)}
-                for i in range(size)
-            ]
-            for j in range(count)
-        ]
-
-        rdds = list(map(self.sc.parallelize, rows))
-        self.ssc.queueStream(rdds).saveToCassandra(self.keyspace, self.table)
+    def test(self):
+        self.stream.saveToCassandra(self.keyspace, self.table)
 
         self.ssc.start()
-        self.ssc.awaitTermination(count + 1)
+        self.ssc.awaitTermination((self.count + 1) * self.interval)
         self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
 
         read = self.rdd(row_format=RowFormat.TUPLE).select('key', 'text').by_primary_key().collect()
-        self.assertEqual(len(read), size * count)
+        self.assertEqual(len(read), self.size * self.count)
         for (k, v) in read:
             self.assertEqual(k, v)
+
+
+
+class JoinRDDTest(SimpleTypesTestBase):
+    rows = {
+       str(c) : str(i) for i, c in
+       enumerate(string.ascii_lowercase)
+    }
+
+    def setUp(self):
+        super(JoinRDDTest, self).setUp()
+        self.session.execute('TRUNCATE %s' % self.table)
+
+        for k, v in self.rows.items():
+            self.session.execute('INSERT INTO ' + self.table + ' (key, text) values (%s, %s)', (k, v))
+
+    def test(self):
+        rdd = self.sc.parallelize(self.rows.items())
+        self.assertEqual(dict(rdd.collect()), self.rows)
+
+        joined = rdd.joinWithCassandraTable(self.keyspace, self.table).on('key').select('key', 'text').cache()
+        self.assertEqual(dict(joined.keys().collect()), dict(joined.values().collect()))
+        for (k, v) in joined.collect():
+            self.assertEqual(k, v)
+
+        # TODO test
+        # .where()
+        # .limit()
+
+
+
+class JoinDStreamTest(StreamingTest):
+    def setUp(self):
+        super(JoinDStreamTest, self).setUp()
+        self.joined_rows = self.sc.accumulator([], accum_param=AddingAccumulatorParam([]))
+
+    def checkRDD(self, time, rdd):
+        self.joined_rows += rdd.collect()
+
+    def test(self):
+        rows = list(chain(*self.rows))
+        rows_by_key = { row['key'] : row for row in rows }
+
+        self.sc \
+            .parallelize(rows) \
+            .saveToCassandra(self.keyspace, self.table)
+
+        self.stream \
+            .joinWithCassandraTable(self.keyspace, self.table, ['text'], ['key']) \
+            .foreachRDD(self.checkRDD)
+
+        self.ssc.start()
+        self.ssc.awaitTermination((self.count + 1) * self.interval)
+        self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
+
+        joined_rows = self.joined_rows.value
+        self.assertEqual(len(joined_rows), len(rows))
+        for row in joined_rows:
+            self.assertEqual(len(row), 2)
+            left, right = row
+
+            self.assertEqual(type(left), type(right))
+            self.assertEqual(rows_by_key[left['key']], left)
+            self.assertEqual(left['text'], right['text'])
+            self.assertEqual(len(right), 1)
+
 
 
 class RegressionTest(CassandraTestCase):
@@ -488,6 +536,6 @@ class RegressionTest(CassandraTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(LimitAndTakeTest)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(JoinDStreamTest)
     # unittest.TextTestRunner().run(suite)
 

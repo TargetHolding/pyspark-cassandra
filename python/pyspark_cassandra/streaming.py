@@ -15,6 +15,7 @@ from types import as_java_object, as_java_array
 from pyspark.streaming.dstream import DStream
 from pyspark_cassandra.conf import WriteConf
 from pyspark_cassandra.util import helper
+from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
 
 
 def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, keyed=None, write_conf=None, **write_conf_kwargs):
@@ -27,7 +28,25 @@ def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, key
     # convert the columns to a string array
     columns = as_java_array(gw, "String", columns) if columns else None
 
-    helper(ctx).saveToCassandra(dstream._jdstream, keyspace, table, columns, row_format, keyed, write_conf)
+    return helper(ctx).saveToCassandra(dstream._jdstream, keyspace, table, columns, row_format, keyed, write_conf)
 
-# Monkey patch the default python DStream so that data in it can be stored to Cassandra as CQL rows
+
+def joinWithCassandraTable(dstream, keyspace, table, selected_columns=None, join_columns=None):
+    ssc = dstream._ssc
+    ctx = ssc._sc
+    gw = ctx._gateway
+
+    selected_columns = as_java_array(gw, "String", selected_columns) if selected_columns else None
+    join_columns = as_java_array(gw, "String", join_columns) if join_columns else None
+
+    h = helper(ctx)
+    dstream = h.joinWithCassandraTable(dstream._jdstream, keyspace, table, selected_columns, join_columns)
+    dstream = h.pickleRows(dstream)
+    dstream = h.javaDStream(dstream)
+
+    return DStream(dstream, ssc, AutoBatchedSerializer(PickleSerializer()))
+
+
+# Monkey patch the default python DStream so that data in it can be stored to and joined with Cassandra tables
 DStream.saveToCassandra = saveToCassandra
+DStream.joinWithCassandraTable = joinWithCassandraTable
