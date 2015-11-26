@@ -12,15 +12,24 @@ env:
   - SPARK_VERSION=1.5.1 SPARK_PACKAGE_TYPE=hadoop2.6
   - SPARK_VERSION=1.5.2 SPARK_PACKAGE_TYPE=hadoop2.6
 
+addons:
+  apt:
+    packages:
+    - build-essential
+    - python-dev
+    - python-pip
+    - libev4
+    - libev-dev
+
 install:
-  - pip install cassandra-driver
+  - pip install --user cassandra-driver
   
 services:
   - cassandra
 
 script: make clean dist test-travis
 
-sudo: true
+sudo: false
 
 cache:
   directories:
