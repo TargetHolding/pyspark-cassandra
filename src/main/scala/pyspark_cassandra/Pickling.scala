@@ -40,6 +40,8 @@ import net.razorvine.pickle.Pickler
 import net.razorvine.pickle.Unpickler
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.DStream
+import scala.reflect.ClassTag
+import scala.collection.JavaConversions
 
 object Pickling {
   def register() = {
@@ -94,9 +96,8 @@ object Pickling {
   }
 }
 
-
 class PicklableRDD(rdd: RDD[_]) {
-	def pickle() = rdd.mapPartitions(new BatchPickler(), true)
+  def pickle() = rdd.mapPartitions(new BatchPickler(), true)
 }
 
 class UnpicklableRDD(rdd: RDD[Array[Byte]]) {
@@ -106,7 +107,6 @@ class UnpicklableRDD(rdd: RDD[Array[Byte]]) {
 class UnpicklableDStream(dstream: DStream[Array[Byte]]) {
   def unpickle() = dstream.flatMap(new BatchUnpickler())
 }
-
 
 class BatchPickler(batchSize: Int = 1000)
     extends (Iterator[_] => Iterator[Array[Byte]])
@@ -142,17 +142,17 @@ trait StructPickler extends IObjectPickler {
 }
 
 trait StructUnpickler extends IObjectConstructor {
-  def construct(args: Array[Object]): Object = {
-    val fieldsList = args(0).asInstanceOf[ArrayList[String]]
-    val fields = fieldsList.toArray(new Array[String](fieldsList.size))
-
-    val values: Array[AnyRef] = args(1) match {
-      case a: Array[AnyRef] => a
-      case l: List[AnyRef] => l.toArray
-      case l: JList[AnyRef] => l.toArray(new Array[AnyRef](l.size))
-    }
+  def construct(args: Array[AnyRef]): Object = {
+    val fields = asArray[String](args(0))
+    val values = asArray[AnyRef](args(1))
 
     construct(fields, values)
+  }
+
+  def asArray[T: ClassTag](l: Any): Array[T] = l match {
+    case a: Array[T] => a
+    case l: List[T] => l.toArray
+    case l: JList[T] =>  JavaConversions.asScalaBuffer(l).toArray
   }
 
   def construct(fields: Array[String], values: Array[AnyRef]): Object
