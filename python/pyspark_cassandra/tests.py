@@ -72,7 +72,7 @@ class CassandraTestCase(unittest.TestCase):
         return read
 
     def read_write_test(self, type_name, value):
-        row = { 'key': type_name, type_name: value}
+        row = {'key': type_name, type_name: value}
         rdd = self.sc.parallelize([row])
         rdd.saveToCassandra(self.keyspace, self.table)
         return self.read_test(type_name, value)
@@ -203,7 +203,7 @@ class CollectionTypesTest(CassandraTestCase):
         self.collections_common_tests(lists, 'l')
 
     def test_map(self):
-        maps = {'m%s' % i : { k : 'x' for k in string.ascii_lowercase[:i] } for i in range(1, 10)}
+        maps = {'m%s' % i : {k : 'x' for k in string.ascii_lowercase[:i]} for i in range(1, 10)}
         self.collections_common_tests(maps, 'm')
 
     def test_set(self):
@@ -486,7 +486,7 @@ class JoinDStreamTest(StreamingTest):
 
     def test(self):
         rows = list(chain(*self.rows))
-        rows_by_key = { row['key'] : row for row in rows }
+        rows_by_key = {row['key'] : row for row in rows}
 
         self.sc \
             .parallelize(rows) \

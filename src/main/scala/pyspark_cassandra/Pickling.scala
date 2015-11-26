@@ -35,8 +35,7 @@ import scala.collection.immutable.List
 import scala.collection.immutable.Map.{ Map1, Map2, Map3, Map4, WithDefault }
 import scala.collection.mutable.{ ArraySeq, Buffer, WrappedArray }
 import scala.reflect.runtime.universe.typeTag
-import com.datastax.driver.core.ProtocolVersion
-import com.datastax.driver.core.{ UDTValue => DriverUDTValue }
+import com.datastax.driver.core.{ ProtocolVersion, UDTValue => DriverUDTValue }
 import com.datastax.spark.connector.UDTValue
 import com.datastax.spark.connector.types.TypeConverter
 import net.razorvine.pickle.{
@@ -185,10 +184,11 @@ object UDTValuePickler extends StructPickler {
     val v = o.asInstanceOf[DriverUDTValue]
     v.getType().map {
       field =>
-        if (v.isNull(field.getName))
+        if (v.isNull(field.getName)) {
           null
-        else
+        } else {
           field.getType().deserialize(v.getBytesUnsafe(field.getName), pv)
+        }
     }.toList
   }
 }

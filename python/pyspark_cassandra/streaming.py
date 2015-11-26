@@ -18,7 +18,8 @@ from pyspark_cassandra.util import helper
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
 
 
-def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, keyed=None, write_conf=None, **write_conf_kwargs):
+def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, keyed=None, write_conf=None,
+                    **write_conf_kwargs):
     ctx = dstream._ssc._sc
     gw = ctx._gateway
 
@@ -33,7 +34,7 @@ def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, key
 
 def joinWithCassandraTable(dstream, keyspace, table, selected_columns=None, join_columns=None):
     """Joins a DStream (a stream of RDDs) with a Cassandra table
-    
+
     Arguments:
         @param dstream(DStream)
         The DStream to join. Equals to self when invoking joinWithCassandraTable on a monkey patched RDD.

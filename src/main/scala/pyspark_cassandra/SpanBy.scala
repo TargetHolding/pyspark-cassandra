@@ -54,7 +54,10 @@ object SpanBy {
 
         // transpose the rows in to columns and 'deserialize'
         val df = colDefs.map { x => new ArrayBuffer[Any] }
-        for (row <- rows; (ct, i) <- colTypesWithIdx) {
+        for {
+          row <- rows
+          (ct, i) <- colTypesWithIdx
+        } {
           df(i) += row.deserialize(i)
         }
 

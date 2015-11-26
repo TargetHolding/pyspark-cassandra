@@ -51,7 +51,7 @@ class PythonHelper() {
     jsc.sc.cassandraTable(keyspace, table).withReadConf(conf)
   }
 
-  def select(rdd: CassandraRDD[UnreadRow], columns: JList[String]) = {
+  def select(rdd: CassandraRDD[UnreadRow], columns: Array[String]) = {
     rdd.select(columns.map { new ColumnName(_) }: _*)
   }
 
@@ -119,7 +119,8 @@ class PythonHelper() {
 
   /* dstreams -------------------------------------------------------------- */
 
-  def joinWithCassandraTable(dstream: JavaDStream[Array[Byte]], keyspace: String, table: String, selectedColumns: Array[String], joinColumns: Array[String]): DStream[(Any, UnreadRow)] = {
+  def joinWithCassandraTable(dstream: JavaDStream[Array[Byte]], keyspace: String, table: String,
+    selectedColumns: Array[String], joinColumns: Array[String]): DStream[(Any, UnreadRow)] = {
     val columns = columnSelector(selectedColumns)
     val joinOn = columnSelector(joinColumns, PartitionKeyColumns)
     implicit val rwf = new GenericRowWriterFactory(None, None)
@@ -144,7 +145,7 @@ class PythonHelper() {
   }
 
   def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow], rowFormat: Integer, keyed: Boolean): RDD[Array[Byte]] =
-      pickleRows(rdd)
+    pickleRows(rdd)
 
   def pickleRows(rdd: CassandraJoinRDD[Any, UnreadRow], rowFormat: Integer): RDD[Array[Byte]] =
     pickleRows(rdd)

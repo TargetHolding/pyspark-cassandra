@@ -26,7 +26,7 @@ class _Conf(object):
             return cls(**kwargs)
 
     def settings(self):
-        return { k:v for k, v in self.__dict__.items() if v is not None }
+        return {k:v for k, v in self.__dict__.items() if v is not None}
 
     def __str__(self):
         return '%s(%s)' % (
@@ -36,7 +36,8 @@ class _Conf(object):
 
 
 class ReadConf(_Conf):
-    def __init__(self, split_count=None, split_size=None, fetch_size=None, consistency_level=None, metrics_enabled=None):
+    def __init__(self, split_count=None, split_size=None, fetch_size=None, consistency_level=None,
+                 metrics_enabled=None):
         '''
             TODO docstring
         '''
@@ -60,7 +61,7 @@ class WriteConf(_Conf):
             @param batch_grouping_key(string):
                 The way batches are formed:
                 * all: any row can be added to any batch
-                * replicaset: rows are batched for replica sets 
+                * replicaset: rows are batched for replica sets
                 * partition: rows are batched by their partition key
                 * None: defaults to "partition"
             @param consistency_level(cassandra.ConsistencyLevel):

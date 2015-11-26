@@ -95,8 +95,9 @@ class GenericRowWriter(format: Option[Format.Value], keyed: Option[Boolean], col
     row.fields.zipWithIndex.foreach {
       case (f, srcIdx) =>
         val dstIdx = columnNames.indexOf(f)
-        if (dstIdx >= 0)
+        if (dstIdx >= 0) {
           buffer(dstIdx + offset) = row.values(srcIdx)
+        }
     }
   }
 }

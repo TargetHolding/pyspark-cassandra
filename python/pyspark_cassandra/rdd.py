@@ -32,10 +32,11 @@ except:
     pass
 
 
-def saveToCassandra(rdd, keyspace=None, table=None, columns=None, row_format=None, keyed=None, write_conf=None, **write_conf_kwargs):
+def saveToCassandra(rdd, keyspace=None, table=None, columns=None, row_format=None, keyed=None, write_conf=None,
+                    **write_conf_kwargs):
     '''
         Saves an RDD to Cassandra. The RDD is expected to contain dicts with keys mapping to CQL columns.
-        
+
         Arguments:
         @param rdd(RDD):
             The RDD to save. Equals to self when invoking saveToCassandra on a monkey patched RDD.
@@ -43,18 +44,18 @@ def saveToCassandra(rdd, keyspace=None, table=None, columns=None, row_format=Non
             The keyspace to save the RDD in. If not given and the rdd is a CassandraRDD the same keyspace is used.
         @param table(string):
             The CQL table to save the RDD in. If not given and the rdd is a CassandraRDD the same table is used.
-    
+
         Keyword arguments:
         @param columns(iterable):
             The columns to save, i.e. which keys to take from the dicts in the RDD.
-            If None given all columns are be stored. 
-        
+            If None given all columns are be stored.
+
         @param row_format(RowFormat):
             Make explicit how to map the RDD elements into Cassandra rows.
             If None given the mapping is auto-detected as far as possible.
         @param keyed(bool):
             Make explicit that the RDD consists of key, value tuples (and not arrays of length two).
-        
+
         @param write_conf(WriteConf):
             A WriteConf object to use when saving to Cassandra
         @param **write_conf_kwargs:
@@ -148,7 +149,8 @@ class _CassandraRDD(RDD):
 
     def select(self, *columns):
         """Creates a CassandraRDD with the select clause applied."""
-        return self._specialize('select', [str(c) for c in columns])
+        columns = as_java_array(self.ctx._gateway, "String", (str(c) for c in columns))
+        return self._specialize('select', columns)
 
 
     def where(self, clause, *args):
@@ -167,10 +169,10 @@ class _CassandraRDD(RDD):
 
     def take(self, num):
         """Takes at most 'num' records from the Cassandra table.
-        
+
         Note that if limit() was invoked before take() a normal pyspark take()
         is performed. Otherwise, first limit is set and _then_ a take() is
-        performed. 
+        performed.
         """
         if self._limit:
             return super(_CassandraRDD, self).take(num)
@@ -196,12 +198,12 @@ class _CassandraRDD(RDD):
         """"Groups rows by the given columns without shuffling.
 
         @param *columns: an iterable of columns by which to group.
-        
+
         Note that:
         -    The rows are grouped by comparing the given columns in order and
             starting a new group whenever the value of the given columns changes.
             This works well with using the partition keys and one or more of the
-            clustering keys. Use rdd.groupBy(...) for any other grouping.  
+            clustering keys. Use rdd.groupBy(...) for any other grouping.
         -    The grouping is applied on the partition level. I.e. any grouping
             will be a subset of its containing partition.
         """
@@ -297,7 +299,7 @@ class SpanningRDD(RDD):
             Reads the spanned rows as DataFrames if pandas is available, or as
             a dict of numpy arrays if only numpy is available or as a dict with
             primitives and objects otherwise.
-            
+
             @param index_by If pandas is available, the dataframes will be
             indexed by the given columns.
         '''
@@ -321,7 +323,7 @@ def joinWithCassandraTable(left_rdd, keyspace, table):
     '''
         Join an RDD with a Cassandra table on the partition key. Use .on(...)
         to specifiy other columns to join on. .select(...), .where(...) and
-        .limit(...) can be used as well. 
+        .limit(...) can be used as well.
 
         Arguments:
         @param left_rdd(RDD):

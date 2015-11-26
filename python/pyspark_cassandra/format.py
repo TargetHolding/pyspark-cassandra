@@ -23,7 +23,7 @@ class RowFormat(object):
         raise NotImplemented('RowFormat is not meant to be initialized, use e.g. RowFormat.DICT')
 
 
-class ColumnSelector():
+class ColumnSelector(object):
     def __init__(self, partition_key=False, primary_key=False, *columns):
         if sum([bool(partition_key), bool(primary_key), bool(columns)]) > 1:
             raise ValueError("can't combine selection of partition_key and/or primar_key and/or columns")
