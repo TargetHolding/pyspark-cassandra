@@ -158,6 +158,7 @@ class _CassandraRDD(RDD):
         @param clause: The where clause, either complete or with ? markers
         @param *args: The parameters for the ? markers in the where clause.
         """
+        args = as_java_array(self.ctx._gateway, "Object", args)
         return self._specialize('where', *[clause, args])
 
 

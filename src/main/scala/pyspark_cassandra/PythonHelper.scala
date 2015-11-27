@@ -59,7 +59,7 @@ class PythonHelper() {
     rdd.limit(lim)
   }
 
-  def where(rdd: CassandraRDD[UnreadRow], cql: String, values: JList[String]) = {
+  def where(rdd: CassandraRDD[UnreadRow], cql: String, values: Array[Any]) = {
     rdd.where(cql, values: _*)
   }
 
