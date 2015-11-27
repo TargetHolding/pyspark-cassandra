@@ -43,7 +43,7 @@ install-ccm: install-venv
 
 start-cassandra: install-ccm	
 	mkdir -p ./.ccm
-	venv/bin/ccm status --config-dir=./.ccm || venv/bin/ccm create pyspark_test -v 2.1.4 -n 1 -s --config-dir=./.ccm
+	venv/bin/ccm status --config-dir=./.ccm || venv/bin/ccm create pyspark_test -v 2.2.3 -n 1 -s --config-dir=./.ccm
 	
 stop-cassandra:
 	venv/bin/ccm remove --config-dir=./.ccm
@@ -63,6 +63,9 @@ test-integration-matrix: \
 
 test-travis:
 	$(call test-integration-for-version,$$SPARK_VERSION,$$SPARK_PACKAGE_TYPE)
+
+test-integration-spark-1.3.1:
+	$(call test-integration-for-version,1.3.1,hadoop2.6)
 
 test-integration-spark-1.4.1:
 	$(call test-integration-for-version,1.4.1,hadoop2.6)

@@ -308,7 +308,7 @@ class LimitAndTakeTest(SimpleTypesTestBase):
 
     def setUp(self):
         super(LimitAndTakeTest, self).setUp()
-        data = self.sc.range(0, self.size).map(lambda i: {'key':i, 'int':i})
+        data = self.sc.parallelize(range(0, self.size)).map(lambda i: {'key':i, 'int':i})
         data.saveToCassandra(self.keyspace, self.table)
 
     def test_limit(self):
