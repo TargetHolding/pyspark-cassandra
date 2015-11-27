@@ -22,7 +22,7 @@ addons:
     - libev-dev
 
 install:
-  - pip install --user cassandra-driver
+  - PYTHONUSERBASE=$HOME/.local pip install --user cassandra-driver
   
 services:
   - cassandra
@@ -36,5 +36,6 @@ cache:
     - $HOME/.m2
     - $HOME/.ivy2
     - $HOME/.sbt
+    - $HOME/.local
     - $HOME/.cache/pip
 
