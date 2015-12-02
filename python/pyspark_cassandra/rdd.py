@@ -16,10 +16,10 @@ from operator import itemgetter
 import sys
 
 from pyspark.rdd import RDD
-from pyspark_cassandra.conf import WriteConf, ReadConf
-from pyspark_cassandra.format import RowFormat, ColumnSelector
-from pyspark_cassandra.types import as_java_array, as_java_object, Row
-from pyspark_cassandra.util import helper
+from pyspark_cassandra.conf import ReadConf, WriteConf
+from pyspark_cassandra.format import ColumnSelector, RowFormat
+from pyspark_cassandra.types import Row
+from pyspark_cassandra.util import as_java_array, as_java_object, helper
 
 
 if sys.version_info > (3,):

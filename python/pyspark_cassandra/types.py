@@ -10,17 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import Set, Iterable, Mapping
 from datetime import datetime, tzinfo, timedelta
 from operator import itemgetter
 import struct
-from time import mktime
 
 
 try:
     # import accessed as globals, see _create_spanning_dataframe(...)
-    import numpy as np
-    import pandas as pd
+    import numpy as np # @UnusedImport
+    import pandas as pd # @UnusedImport
 except ImportError:
     pass
 
@@ -253,65 +251,3 @@ def _unpack(fmt, cvalue):
         raise ValueError('number of bytes must be a multiple of %s for format %s' % (stride, fmt))
 
     return [struct.unpack(cvalue[o:o + stride]) for o in range(len(cvalue) / stride, stride)]
-
-
-
-def as_java_array(gateway, java_type, iterable):
-    """Creates a Java array from a Python iterable, using the given p4yj gateway"""
-
-    if iterable is None:
-        return None
-
-    java_type = gateway.jvm.__getattr__(java_type)
-    lst = list(iterable)
-    arr = gateway.new_array(java_type, len(lst))
-
-    for i, e in enumerate(lst):
-        jobj = as_java_object(gateway, e)
-        arr[i] = jobj
-
-    return arr
-
-
-def as_java_object(gateway, obj):
-    """Converts a limited set of types to their corresponding types in java. Supported are 'primitives' (which aren't
-    converted), datetime.datetime and the set-, dict- and iterable-like types.
-    """
-
-    if obj is None:
-        return None
-
-    t = type(obj)
-
-    if issubclass(t, (bool, int, float, str)):
-        return obj
-
-    elif issubclass(t, UDT):
-        field_names = as_java_array(gateway, "String", obj.keys())
-        field_values = as_java_array(gateway, "Object", obj.values())
-        udt = gateway.jvm.UDTValueConverter(field_names, field_values)
-        return udt.toConnectorType()
-
-    elif issubclass(t, datetime):
-        timestamp = int(mktime(obj.timetuple()) * 1000)
-        return gateway.jvm.java.util.Date(timestamp)
-
-    elif issubclass(t, (dict, Mapping)):
-        hash_map = gateway.jvm.java.util.HashMap()
-        for (k, v) in obj.items(): hash_map[k] = v
-        return hash_map
-
-    elif issubclass(t, (set, Set)):
-        hash_set = gateway.jvm.java.util.HashSet()
-        for e in obj: hash_set.add(e)
-        return hash_set
-
-    elif issubclass(t, (list, Iterable)):
-        array_list = gateway.jvm.java.util.ArrayList()
-        for e in obj: array_list.append(e)
-        return array_list
-
-    else:
-        return obj
-
-

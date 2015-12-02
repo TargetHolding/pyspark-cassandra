@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from types import as_java_object, as_java_array
+from pyspark_cassandra.util import as_java_object, as_java_array
 
 from pyspark.streaming.dstream import DStream
 from pyspark_cassandra.conf import WriteConf
