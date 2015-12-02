@@ -1,4 +1,5 @@
 SHELL = /bin/bash
+VERSION = $(shell grep version build.sbt | sed 's/version := //g' | sed 's/"//g')
 
 .PHONY: clean clean-pyc clean-dist dist test-travis
 
@@ -14,23 +15,10 @@ clean-pyc:
 
 clean-dist:
 	rm -rf target
-	rm -rf src/main/python/build
-	rm -rf src/main/python/*.egg-info
+	rm -rf python/build/
+	rm -rf python/*.egg-info
 
 
-
-test: test-python test-scala test-integration
-
-test-python:
-
-test-scala:
-
-
-
-test-integration: \
-	test-integration-setup \
-	test-integration-matrix \	
-	test-integration-teardown
 
 install-venv:
 	test -d venv || virtualenv venv
@@ -42,12 +30,25 @@ install-ccm: install-venv
 	venv/bin/pip install ccm
 
 start-cassandra: install-ccm	
-	mkdir -p ./.ccm
-	venv/bin/ccm status --config-dir=./.ccm || venv/bin/ccm create pyspark_test -v 2.2.3 -n 1 -s --config-dir=./.ccm
+	mkdir -p .ccm
+	venv/bin/ccm status --config-dir=.ccm || venv/bin/ccm create pyspark_test -v 2.2.3 -n 1 -s --config-dir=.ccm
 	
 stop-cassandra:
-	venv/bin/ccm remove --config-dir=./.ccm
+	venv/bin/ccm remove --config-dir=.ccm
 
+
+
+test: test-python test-scala test-integration
+
+test-python:
+
+test-scala:
+
+test-integration: \
+	test-integration-setup \
+	test-integration-matrix \	
+	test-integration-teardown
+	
 test-integration-setup: \
 	start-cassandra
 
@@ -91,14 +92,15 @@ define test-integration-for-version
 	source venv/bin/activate ; \
 		lib/spark-$1-bin-$2/bin/spark-submit \
 			--master local[*] \
-			--driver-memory 256m \
+			--driver-memory 512m \
 			--conf spark.cassandra.connection.host="localhost" \
-			--jars target/scala-2.10/pyspark-cassandra-assembly-0.2.0.jar \
-			--py-files target/pyspark_cassandra-0.2.0-py2.7.egg \
+			--jars target/scala-2.10/pyspark-cassandra-assembly-$(VERSION).jar \
+			--py-files target/pyspark_cassandra-$(VERSION)-py2.7.egg \
 			python/pyspark_cassandra/tests.py
 			
 	echo ======================================================================
 endef
+
 
 
 dist: dist-python dist-scala
