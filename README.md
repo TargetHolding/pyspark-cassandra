@@ -36,8 +36,8 @@ Feedback on (in-)compatibility is much appreciated.
 Using with PySpark
 ------------------
 
-### With Spark 1.3
-Pyspark Cassandra is published at [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra). This allows easy usage with Spark 1.3 and beyond through:
+### With Spark Packages
+Pyspark Cassandra is published at [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra). This allows easy usage with Spark through:
 ```bash
 spark-submit \
 	--packages TargetHolding/pyspark-cassandra:<version> \
@@ -45,7 +45,7 @@ spark-submit \
 ```
 
 
-### With Spark 1.2 / without Spark Packages
+### Without Spark Packages
 
 ```bash
 spark-submit \
@@ -62,7 +62,7 @@ spark-submit \
 Using with PySpark shell
 ------------------------
 
-Replace `spark-submit` with `pyspark` to start the interactive shell and don't provide a script as argument and then import PySpark Cassandra. Note that when performing this import the `sc` variable in pyspark is augmented with the `cassandraTable(...)` method. 
+Replace `spark-submit` with `pyspark` to start the interactive shell and don't provide a script as argument and then import PySpark Cassandra. Note that when performing this import the `sc` variable in pyspark is augmented with the `cassandraTable(...)` method.
 
 ```python
 import pyspark_cassandra
@@ -72,8 +72,8 @@ import pyspark_cassandra
 
 Building
 --------
-### For Spark 1.3 with [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra)
-Pyspark Cassandra can be compiled using:
+
+### For [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra) Pyspark Cassandra can be compiled using:
 ```bash
 sbt compile
 ```
@@ -86,7 +86,7 @@ The package can be published to Spark Packages with (requires authentication and
 sbt spPublish
 ```
 
-### For local testing / pre Spark 1.3 versions / without Spark Packages
+### For local testing / without Spark Packages
 A Java / JVM library as well as a python library is required to use PySpark Cassandra. They can be built with:
 
 ```bash
