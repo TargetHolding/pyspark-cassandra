@@ -1,0 +1,3 @@
+[submodule "pyspark-util"]
+	path = pyspark-util
+	url = /home/frens-jan/Workspaces/tgho/spark/pyspark-cassandra/../pyspark-util

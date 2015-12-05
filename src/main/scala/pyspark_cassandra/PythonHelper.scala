@@ -15,6 +15,8 @@
 package pyspark_cassandra
 
 import pyspark_cassandra.Utils._
+import pyspark_util.Pickling._
+import pyspark_util.Conversions._
 
 import java.lang.Boolean
 import java.util.{ List => JList, Map => JMap }
@@ -36,10 +38,6 @@ import com.datastax.spark.connector.writer._
 class PythonHelper() {
 
   Pickling.register()
-
-  implicit def toPickleableRDD(rdd: RDD[_]) = new PicklableRDD(rdd)
-  implicit def toUnpickleableRDD(rdd: RDD[Array[Byte]]) = new UnpicklableRDD(rdd)
-  implicit def toUnpickleableStream(dstream: DStream[Array[Byte]]) = new UnpicklableDStream(dstream)
 
   /* ----------------------------------------------------------------------- */
   /* loading from cassandra ------------------------------------------------ */

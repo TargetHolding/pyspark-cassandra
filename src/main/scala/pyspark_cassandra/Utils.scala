@@ -31,6 +31,7 @@ import com.datastax.spark.connector.writer._
 
 object Utils {
   def deserialize(dt: DataType, b: ByteBuffer, pv: ProtocolVersion) = dt.deserialize(b, pv)
+
   /*
    * // When moving tospark cassandra connector 1.5.x :
    * import com.datastax.driver.core.CodecRegistry
@@ -39,30 +40,6 @@ object Utils {
    * def codec(dt: DataType) = CodecRegistry.DEFAULT_INSTANCE.codecFor(dt)
    * ...
   */
-
-  def asArray[T: ClassTag](c: Any): Array[T] = c match {
-    case a: Array[T] => a
-    case b: Buffer[T] => b.toArray
-    case l: List[T] => l.toArray
-    case l: JList[T] => asScalaBuffer(l).toArray
-    case _ => throw new IllegalArgumentException(c.getClass() + " can't be converted to an Array")
-  }
-
-  def asSeq[T: ClassTag](c: Any): Seq[T] = c match {
-    case a: Array[T] => a
-    case b: Buffer[T] => b
-    case l: List[T] => l
-    case l: JList[T] => asScalaBuffer(l).toSeq
-    case _ => throw new IllegalArgumentException(c.getClass() + " can't be converted to a Seq")
-  }
-
-  def asBooleanOption(v: JBoolean) = {
-    if (v == null) {
-      None
-    } else {
-      Some(v.booleanValue())
-    }
-  }
 
   def columnSelector(columns: Array[String], default: ColumnSelector = AllColumns) = {
     if (columns != null && columns.length > 0) {

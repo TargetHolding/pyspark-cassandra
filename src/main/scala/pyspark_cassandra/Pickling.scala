@@ -14,7 +14,8 @@
 
 package pyspark_cassandra
 
-import pyspark_cassandra.Utils._
+import pyspark_util.Conversions._
+import pyspark_util.{ Pickling => PicklingUtils, _ }
 import java.io.OutputStream
 import java.math.BigInteger
 import java.net.{ Inet4Address, Inet6Address, InetAddress }
@@ -52,114 +53,18 @@ import java.io.NotSerializableException
 
 object Pickling {
   def register() = {
-    Unpickler.registerConstructor("uuid", "UUID", UUIDUnpickler)
+    PicklingUtils.register()
+
     Unpickler.registerConstructor("pyspark.sql", "_create_row", PlainRowUnpickler)
     Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", PlainRowUnpickler)
     Unpickler.registerConstructor("pyspark_cassandra.types", "_create_udt", UDTValueUnpickler)
 
-    Pickler.registerCustomPickler(classOf[UUID], UUIDPickler)
-    Pickler.registerCustomPickler(classOf[InetAddress], AsStringPickler)
-    Pickler.registerCustomPickler(classOf[Inet4Address], AsStringPickler)
-    Pickler.registerCustomPickler(classOf[Inet6Address], AsStringPickler)
-    Pickler.registerCustomPickler(classOf[ByteBuffer], ByteBufferPickler)
-    Pickler.registerCustomPickler(Class.forName("java.nio.HeapByteBuffer"), ByteBufferPickler)
-    Pickler.registerCustomPickler(classOf[GatheredByteBuffers], GatheringByteBufferPickler)
     Pickler.registerCustomPickler(classOf[Row], PlainRowPickler)
     Pickler.registerCustomPickler(classOf[DriverUDTValue], UDTValuePickler)
     Pickler.registerCustomPickler(classOf[DataFrame], DataFramePickler)
-    Pickler.registerCustomPickler(Class.forName("scala.collection.immutable.$colon$colon"), ListPickler)
-    Pickler.registerCustomPickler(classOf[ArraySeq[_]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Buffer[_]], ListPickler)
-    Pickler.registerCustomPickler(classOf[WrappedArray.ofRef[_]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Stream.Cons[_]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple1[_]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple2[_, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple3[_, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple4[_, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple5[_, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple6[_, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple7[_, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple8[_, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple9[_, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple10[_, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple11[_, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple12[_, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple13[_, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple14[_, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple15[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple16[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple17[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple18[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple19[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple20[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple21[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[Tuple22[_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _]], ListPickler)
-    Pickler.registerCustomPickler(classOf[WithDefault[_, _]], MapPickler)
-    Pickler.registerCustomPickler(classOf[Map1[_, _]], MapPickler)
-    Pickler.registerCustomPickler(classOf[Map2[_, _]], MapPickler)
-    Pickler.registerCustomPickler(classOf[Map3[_, _]], MapPickler)
-    Pickler.registerCustomPickler(classOf[Map4[_, _]], MapPickler)
-    Pickler.registerCustomPickler(classOf[HashTrieMap[_, _]], MapPickler)
 
-    TypeConverter.registerConverter(UUIDUnpickler.UnpickledUUIDConverter)
+    TypeConverter.registerConverter(UnpickledUUIDConverter)
   }
-}
-
-class PicklableRDD(rdd: RDD[_]) {
-  def pickle() = rdd.mapPartitions(new BatchPickler(), true)
-}
-
-class UnpicklableRDD(rdd: RDD[Array[Byte]]) {
-  def unpickle() = rdd.flatMap(new BatchUnpickler())
-}
-
-class UnpicklableDStream(dstream: DStream[Array[Byte]]) {
-  def unpickle() = dstream.flatMap(new BatchUnpickler())
-}
-
-class BatchPickler(batchSize: Int = 1000)
-    extends (Iterator[_] => Iterator[Array[Byte]])
-    with Serializable {
-
-  def apply(in: Iterator[_]): Iterator[Array[Byte]] = {
-    val pickler = new Pickler()
-    in.grouped(batchSize).map { b => pickler.dumps(b.toArray) }
-  }
-}
-
-class BatchUnpickler extends (Array[Byte] => Seq[Any]) with Serializable {
-  def apply(in: Array[Byte]): Seq[Any] = {
-    val unpickled = new Unpickler().loads(in)
-    asSeq(unpickled)
-  }
-}
-
-trait StructPickler extends IObjectPickler {
-  def pickle(o: Any, out: OutputStream, pickler: Pickler): Unit = {
-    out.write(Opcodes.GLOBAL)
-    out.write(creator.getBytes())
-    out.write(Opcodes.MARK)
-    val f = fields(o)
-    pickler.save(f)
-    pickler.save(values(o, f))
-    out.write(Opcodes.TUPLE)
-    out.write(Opcodes.REDUCE)
-  }
-
-  def creator: String
-  def fields(o: Any): Seq[_]
-  def values(o: Any, fields: Seq[_]): Seq[_]
-}
-
-trait StructUnpickler extends IObjectConstructor {
-  def construct(args: Array[AnyRef]): Object = {
-    val fields = asSeq[String](args(0))
-    val values = asSeq[AnyRef](args(1))
-
-    construct(fields, values)
-  }
-
-  def construct(fields: Seq[String], values: Seq[AnyRef]): Object
 }
 
 object PlainRowPickler extends StructPickler {
@@ -201,80 +106,6 @@ object UDTValueUnpickler extends StructUnpickler {
   }
 }
 
-object AsStringPickler extends IObjectPickler {
-  def pickle(o: Any, out: OutputStream, pickler: Pickler) = pickler.save(o.toString())
-}
-
-object UUIDPickler extends IObjectPickler {
-  def pickle(o: Any, out: OutputStream, pickler: Pickler): Unit = {
-    out.write(Opcodes.GLOBAL)
-    out.write("uuid\nUUID\n".getBytes())
-    out.write(Opcodes.MARK)
-    pickler.save(o.asInstanceOf[UUID].toString())
-    out.write(Opcodes.TUPLE)
-    out.write(Opcodes.REDUCE)
-  }
-}
-
-object UUIDUnpickler extends IObjectConstructor {
-  def construct(args: Array[Object]): Object = {
-    args.size match {
-      case 1 => UUID.fromString(args(0).asInstanceOf[String])
-      case _ => new UUIDHolder()
-    }
-  }
-
-  class UUIDHolder {
-    var uuid: UUID = null
-
-    def __setstate__(values: HashMap[String, Object]): UUID = {
-      val i = values.get("int").asInstanceOf[BigInteger]
-      val buffer = ByteBuffer.wrap(i.toByteArray())
-      uuid = new UUID(buffer.getLong(), buffer.getLong())
-      uuid
-    }
-  }
-
-  object UnpickledUUIDConverter extends TypeConverter[UUID] {
-    def targetTypeTag = typeTag[UUID]
-    def convertPF = { case holder: UUIDHolder => holder.uuid }
-  }
-}
-
-class GatheredByteBuffers(buffers: Seq[ByteBuffer]) extends Iterable[ByteBuffer] {
-  def iterator() = buffers.iterator
-}
-
-class GatheringByteBufferPickler extends IObjectPickler {
-  def pickle(o: Any, out: OutputStream, currentPickler: Pickler) = {
-    val buffers = o.asInstanceOf[GatheredByteBuffers]
-
-    out.write(Opcodes.GLOBAL)
-    out.write("__builtin__\nbytearray\n".getBytes())
-
-    out.write(Opcodes.BINSTRING)
-
-    val length = buffers.map { _.remaining() }.sum
-
-    out.write(PickleUtils.integer_to_bytes(length))
-
-    val c = Channels.newChannel(out)
-    buffers.foreach { c.write(_) }
-
-    out.write(Opcodes.TUPLE1)
-    out.write(Opcodes.REDUCE)
-  }
-}
-
-object GatheringByteBufferPickler extends GatheringByteBufferPickler
-
-object ByteBufferPickler extends GatheringByteBufferPickler {
-  override def pickle(o: Any, out: OutputStream, pickler: Pickler) = {
-    val buffers = new GatheredByteBuffers(o.asInstanceOf[ByteBuffer] :: Nil)
-    super.pickle(buffers, out, pickler)
-  }
-}
-
 object DataFramePickler extends IObjectPickler {
   def pickle(o: Any, out: OutputStream, pickler: Pickler): Unit = {
     val df = o.asInstanceOf[DataFrame]
@@ -298,25 +129,7 @@ object DataFramePickler extends IObjectPickler {
   }
 }
 
-object ListPickler extends IObjectPickler {
-  def pickle(o: Any, out: OutputStream, pickler: Pickler): Unit = {
-    pickler.save(
-      o match {
-        case c: Collection[_] => c
-        case b: Buffer[_] => bufferAsJavaList(b)
-        case s: Seq[_] => seqAsJavaList(s)
-        case p: Product => seqAsJavaList(p.productIterator.toSeq)
-        case _ => throw new NotSerializableException(o.toString())
-      })
-  }
-}
-
-object MapPickler extends IObjectPickler {
-  def pickle(o: Any, out: OutputStream, pickler: Pickler): Unit = {
-    pickler.save(
-      o match {
-        case m: JMap[_, _] => m
-        case m: Map[_, _] => mapAsJavaMap(m)
-      })
-  }
+object UnpickledUUIDConverter extends TypeConverter[UUID] {
+  def targetTypeTag = typeTag[UUID]
+  def convertPF = { case holder: UUIDHolder => holder.uuid }
 }
