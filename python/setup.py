@@ -27,7 +27,7 @@ setup(
 	name='pyspark_cassandra',
 	maintainer='Frens Jan Rumph',
 	maintainer_email='frens.jan.rumph@target-holding.nl',
-	version='0.2.1',
+	version='0.2.2',
 	description='Utilities to asssist in working with Cassandra and PySpark.',
 	long_description=f('../README.md').read(),
 	url='https://github.com/TargetHolding/pyspark-cassandra',
