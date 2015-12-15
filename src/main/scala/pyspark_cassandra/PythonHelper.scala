@@ -37,7 +37,7 @@ import com.datastax.spark.connector.writer._
 
 class PythonHelper() {
 
-  Pickling.register()
+  implicit val pickling = new Pickling()
 
   /* ----------------------------------------------------------------------- */
   /* loading from cassandra ------------------------------------------------ */

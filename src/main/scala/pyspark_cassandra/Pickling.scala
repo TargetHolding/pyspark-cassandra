@@ -21,14 +21,7 @@ import java.math.BigInteger
 import java.net.{ Inet4Address, Inet6Address, InetAddress }
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
-import java.util.{
-  ArrayList,
-  Collection,
-  HashMap,
-  List => JList,
-  Map => JMap,
-  UUID
-}
+import java.util.{ ArrayList, Collection, HashMap, List => JList, Map => JMap, UUID }
 import scala.reflect.ClassTag
 import scala.collection.JavaConversions._
 import scala.collection.immutable.HashMap.HashTrieMap
@@ -39,21 +32,14 @@ import scala.reflect.runtime.universe.typeTag
 import com.datastax.driver.core.{ ProtocolVersion, UDTValue => DriverUDTValue }
 import com.datastax.spark.connector.UDTValue
 import com.datastax.spark.connector.types.TypeConverter
-import net.razorvine.pickle.{
-  IObjectConstructor,
-  IObjectPickler,
-  Opcodes,
-  PickleUtils,
-  Pickler,
-  Unpickler
-}
+import net.razorvine.pickle.{ IObjectConstructor, IObjectPickler, Opcodes, PickleUtils, Pickler, Unpickler }
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.DStream
 import java.io.NotSerializableException
 
-object Pickling {
-  def register() = {
-    PicklingUtils.register()
+class Pickling extends PicklingUtils {
+  override def register() {
+    super.register()
 
     Unpickler.registerConstructor("pyspark.sql", "_create_row", PlainRowUnpickler)
     Unpickler.registerConstructor("pyspark_cassandra.types", "_create_row", PlainRowUnpickler)
