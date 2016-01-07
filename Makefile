@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-VERSION = $(shell grep ^version build.sbt | sed 's/version := //g' | sed 's/"//g')
+VERSION = $(shell grep ^version build.sbt | sed 's/^version := //g' | sed 's/"//g')
 
 .PHONY: clean clean-pyc clean-dist dist test-travis
 
