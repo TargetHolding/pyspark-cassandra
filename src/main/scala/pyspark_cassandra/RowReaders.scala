@@ -18,15 +18,16 @@ import com.datastax.driver.core.{ ProtocolVersion, Row => DriverRow }
 import com.datastax.spark.connector.ColumnRef
 import com.datastax.spark.connector.cql.TableDef
 import com.datastax.spark.connector.rdd.reader.{RowReader, RowReaderFactory}
+import com.datastax.spark.connector.GettableData
 
 /** A container for a 'raw' row from the java driver, to be deserialized. */
-case class UnreadRow(row: DriverRow, columnNames: Array[String], table: TableDef, protocolVersion: ProtocolVersion) {
+case class UnreadRow(row: DriverRow, columnNames: Array[String], table: TableDef) {
   def deserialize(c: String) = {
-    if (row.isNull(c)) null else Utils.deserialize(row.getColumnDefinitions.getType(c), row.getBytesUnsafe(c), protocolVersion)
+    if (row.isNull(c)) null else GettableData.get(row, c)
   }
 
   def deserialize(c: Int) = {
-    if (row.isNull(c)) null else Utils.deserialize(row.getColumnDefinitions.getType(c), row.getBytesUnsafe(c), protocolVersion)
+    if (row.isNull(c)) null else GettableData.get(row, c)
   }
 }
 
@@ -37,9 +38,9 @@ class DeferringRowReader(table: TableDef, selectedColumns: IndexedSeq[ColumnRef]
 
   override def neededColumns: Option[Seq[ColumnRef]] = None // TODO or selected columns?
 
-  override def read(row: DriverRow, columns: Array[String])(implicit protocol: ProtocolVersion) = {
+  override def read(row: DriverRow, columns: Array[String]): UnreadRow = {
     assert(row.getColumnDefinitions().size() >= columns.size, "Not enough columns available in row")
-    UnreadRow(row, columns, table, protocol)
+    UnreadRow(row, columns, table)
   }
 }
 
