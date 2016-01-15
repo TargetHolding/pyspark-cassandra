@@ -1,6 +1,6 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..
 
-VERSION=`grep version $DIR/build.sbt | sed 's/version := //g' | sed 's/"//g'`
+VERSION=`cat version.txt`
 
 PYSPARK_DRIVER_PYTHON=ipython \
 	$DIR/lib/spark-1.4.1-bin-hadoop2.6/bin/pyspark \

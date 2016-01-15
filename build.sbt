@@ -1,6 +1,8 @@
+import scala.io
+
 name := "pyspark-cassandra"
 
-version := "0.2.2"
+version := io.Source.fromFile("version.txt").mkString
 
 organization := "TargetHolding"
 
