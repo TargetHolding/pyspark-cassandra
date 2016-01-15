@@ -31,10 +31,10 @@ install-ccm: install-venv
 
 start-cassandra: install-ccm	
 	mkdir -p .ccm
-	venv/bin/ccm status --config-dir=.ccm || venv/bin/ccm create pyspark_test -v 2.2.3 -n 1 -s --config-dir=.ccm
+	venv/bin/ccm status || venv/bin/ccm create pyspark_cassandra_test -v $(CASSANDRA_VERSION) -n 1 -s
 	
 stop-cassandra:
-	venv/bin/ccm remove --config-dir=.ccm
+	venv/bin/ccm remove
 
 
 
@@ -63,7 +63,7 @@ test-integration-matrix: \
 	test-integration-spark-1.5.2 \
 	test-integration-spark-1.6.0
 
-test-travis:
+test-travis: install-cassandra-driver
 	$(call test-integration-for-version,$$SPARK_VERSION,$$SPARK_PACKAGE_TYPE)
 
 test-integration-spark-1.3.1:
