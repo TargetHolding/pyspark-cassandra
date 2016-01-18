@@ -17,8 +17,8 @@ import struct
 
 try:
     # import accessed as globals, see _create_spanning_dataframe(...)
-    import numpy as np # @UnusedImport
-    import pandas as pd # @UnusedImport
+    import numpy as np  # @UnusedImport
+    import pandas as pd  # @UnusedImport
 except ImportError:
     pass
 
@@ -86,6 +86,10 @@ class Struct(tuple):
         return self.__class__(**d)
 
     def __sub__(self, other):
+        d = { k:v for k, v in self.__FIELDS__.items() if k not in other }
+        return self.__class__(**d)
+
+    def __and__(self, other):
         d = { k:v for k, v in self.__FIELDS__.items() if k in other }
         return self.__class__(**d)
 
