@@ -17,8 +17,8 @@ import struct
 
 try:
     # import accessed as globals, see _create_spanning_dataframe(...)
-    import numpy as np # @UnusedImport
-    import pandas as pd # @UnusedImport
+    import numpy as np  # @UnusedImport
+    import pandas as pd  # @UnusedImport
 except ImportError:
     pass
 
@@ -131,7 +131,7 @@ class Struct(tuple):
         return self.__dict__()
 
     def __reduce__(self):
-        keys = self.__FIELDS__.keys()
+        keys = list(self.__FIELDS__.keys())
         values = [self.__FIELDS__[k] for k in keys]
         return (self._creator(), (keys, values,))
 
