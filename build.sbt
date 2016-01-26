@@ -2,7 +2,7 @@ import scala.io
 
 name := "pyspark-cassandra"
 
-version := io.Source.fromFile("version.txt").mkString
+version := io.Source.fromFile("version.txt").mkString.trim
 
 organization := "TargetHolding"
 
