@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime, tzinfo, timedelta
+from itertools import chain
 from operator import itemgetter
 import struct
 
@@ -69,6 +70,12 @@ class Struct(tuple):
 
     def __len__(self):
         return len(self.__FIELDS__)
+
+    def __hash__(self):
+        h = 1
+        for v in chain(self.keys(), self.values()):
+            h = 31 * h + hash(v)
+        return h
 
     def __eq__(self, other):
         try:
@@ -255,3 +262,4 @@ def _unpack(fmt, cvalue):
         raise ValueError('number of bytes must be a multiple of %s for format %s' % (stride, fmt))
 
     return [struct.unpack(cvalue[o:o + stride]) for o in range(len(cvalue) / stride, stride)]
+
