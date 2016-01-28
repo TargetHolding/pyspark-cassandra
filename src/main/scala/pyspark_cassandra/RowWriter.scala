@@ -29,16 +29,23 @@ class GenericRowWriterFactory(format: Option[Format.Value], keyed: Option[Boolea
 }
 
 class GenericRowWriter(format: Option[Format.Value], keyed: Option[Boolean], columns: IndexedSeq[ColumnRef]) extends RowWriter[Any] {
-  def columnNames: Seq[String] = columns.map { _.columnName }
-  def indexedColumns = columnNames.zipWithIndex
+  val cNames = columns.map { _.columnName }
+  val idxedCols = cNames.zipWithIndex
+
+  def columnNames: Seq[String] = cNames
+  def indexedColumns = idxedCols
+
+  var fmt: Option[(Format.Value, Boolean)] = None
 
   def readColumnValues(row: Any, buffer: Array[Any]): Unit = {
-    val fmt = (format, keyed) match {
-      case (Some(x: Format.Value), Some(y: Boolean)) => (x, y)
-      case _ => Format.detect(row)
+    if (fmt.isEmpty) {
+      fmt = Some((format, keyed) match {
+        case (Some(x: Format.Value), Some(y: Boolean)) => (x, y)
+        case _ => Format.detect(row)
+      })
     }
 
-    fmt match {
+    fmt.get match {
       case (Format.TUPLE, false) => readAsTuple(row, buffer)
       case (Format.TUPLE, true) => readAsKVTuples(row, buffer)
       case (Format.DICT, false) => readAsDict(row, buffer)
