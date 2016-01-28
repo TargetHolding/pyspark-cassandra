@@ -26,7 +26,8 @@ class RowFormat(object):
 class ColumnSelector(object):
     def __init__(self, partition_key=False, primary_key=False, *columns):
         if sum([bool(partition_key), bool(primary_key), bool(columns)]) > 1:
-            raise ValueError("can't combine selection of partition_key and/or primar_key and/or columns")
+            raise ValueError(
+                "can't combine selection of partition_key and/or primar_key and/or columns")
 
         self.partition_key = partition_key
         self.primary_key = primary_key

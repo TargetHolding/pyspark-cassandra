@@ -49,12 +49,14 @@ class ReadConf(_Conf):
 
 
 class WriteConf(_Conf):
-    def __init__(self, batch_size=None, batch_buffer_size=None, batch_grouping_key=None, consistency_level=None,
-                 parallelism_level=None, throughput_mibps=None, ttl=None, timestamp=None, metrics_enabled=None):
+    def __init__(self, batch_size=None, batch_buffer_size=None, batch_grouping_key=None,
+                 consistency_level=None, parallelism_level=None, throughput_mibps=None, ttl=None,
+                 timestamp=None, metrics_enabled=None):
         '''
             @param batch_size(int):
                 The size in bytes to batch up in an unlogged batch of CQL inserts.
-                If None given the default size of 16*1024 is used or spark.cassandra.output.batch.size.bytes if set.
+                If None given the default size of 16*1024 is used or
+                spark.cassandra.output.batch.size.bytes if set.
             @param batch_buffer_size(int):
                 The maximum number of batches which are 'pending'.
                 If None given the default of 1000 is used.
@@ -94,7 +96,8 @@ class WriteConf(_Conf):
 
         # convert date or datetime objects to a timestamp in milliseconds since the UNIX epoch
         if timestamp and (isinstance(timestamp, datetime) or isinstance(timestamp, date)):
-            timestamp = int((timestamp - timestamp.__class__(1970, 1, 1)).total_seconds() * 1000 * 1000)
+            timestamp = (timestamp - timestamp.__class__(1970, 1, 1)).total_seconds()
+            timestamp = int(timestamp * 1000 * 1000)
         self.timestamp = timestamp
 
         self.metrics_enabled = metrics_enabled

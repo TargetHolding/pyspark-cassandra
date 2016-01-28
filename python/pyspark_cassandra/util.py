@@ -37,8 +37,10 @@ def as_java_array(gateway, java_type, iterable):
 
 
 def as_java_object(gateway, obj):
-    """Converts a limited set of types to their corresponding types in java. Supported are 'primitives' (which aren't
-    converted), datetime.datetime and the set-, dict- and iterable-like types.
+    """
+        Converts a limited set of types to their corresponding types in java. Supported are
+        'primitives' (which aren't converted), datetime.datetime and the set-, dict- and
+        iterable-like types.
     """
 
     if obj is None:

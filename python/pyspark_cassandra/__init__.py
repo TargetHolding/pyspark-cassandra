@@ -11,8 +11,9 @@
 # limitations under the License.
 
 """
-This module provides python support for Apache Spark's Resillient Distributed Datasets from Apache Cassandra CQL rows
-using the Spark Cassandra Connector from https://github.com/datastax/spark-cassandra-connector.
+    This module provides python support for Apache Spark's Resillient Distributed Datasets from
+    Apache Cassandra CQL rows using the Spark Cassandra Connector from
+    https://github.com/datastax/spark-cassandra-connector.
 """
 
 import inspect

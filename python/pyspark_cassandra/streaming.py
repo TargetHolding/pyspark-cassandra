@@ -18,8 +18,8 @@ from pyspark_cassandra.util import helper
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
 
 
-def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, keyed=None, write_conf=None,
-                    **write_conf_kwargs):
+def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, keyed=None,
+                    write_conf=None, **write_conf_kwargs):
     ctx = dstream._ssc._sc
     gw = ctx._gateway
 
@@ -29,7 +29,8 @@ def saveToCassandra(dstream, keyspace, table, columns=None, row_format=None, key
     # convert the columns to a string array
     columns = as_java_array(gw, "String", columns) if columns else None
 
-    return helper(ctx).saveToCassandra(dstream._jdstream, keyspace, table, columns, row_format, keyed, write_conf)
+    return helper(ctx).saveToCassandra(dstream._jdstream, keyspace, table, columns, row_format,
+                                       keyed, write_conf)
 
 
 def joinWithCassandraTable(dstream, keyspace, table, selected_columns=None, join_columns=None):
@@ -37,7 +38,8 @@ def joinWithCassandraTable(dstream, keyspace, table, selected_columns=None, join
 
     Arguments:
         @param dstream(DStream)
-        The DStream to join. Equals to self when invoking joinWithCassandraTable on a monkey patched RDD.
+        The DStream to join. Equals to self when invoking joinWithCassandraTable on a monkey
+        patched RDD.
         @param keyspace(string):
             The keyspace to join on.
         @param table(string):
@@ -56,13 +58,15 @@ def joinWithCassandraTable(dstream, keyspace, table, selected_columns=None, join
     join_columns = as_java_array(gw, "String", join_columns) if join_columns else None
 
     h = helper(ctx)
-    dstream = h.joinWithCassandraTable(dstream._jdstream, keyspace, table, selected_columns, join_columns)
+    dstream = h.joinWithCassandraTable(dstream._jdstream, keyspace, table, selected_columns,
+                                       join_columns)
     dstream = h.pickleRows(dstream)
     dstream = h.javaDStream(dstream)
 
     return DStream(dstream, ssc, AutoBatchedSerializer(PickleSerializer()))
 
 
-# Monkey patch the default python DStream so that data in it can be stored to and joined with Cassandra tables
+# Monkey patch the default python DStream so that data in it can be stored to and joined with
+# Cassandra tables
 DStream.saveToCassandra = saveToCassandra
 DStream.joinWithCassandraTable = joinWithCassandraTable

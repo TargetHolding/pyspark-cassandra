@@ -23,27 +23,30 @@ from pyspark_cassandra.util import as_java_array, as_java_object, helper
 
 
 if sys.version_info > (3,):
-    long = int # @ReservedAssignment
+    long = int  # @ReservedAssignment
 
 
 try:
-    import pandas as pd # @UnusedImport, import used in SpanningRDD
+    import pandas as pd  # @UnusedImport, import used in SpanningRDD
 except:
     pass
 
 
-def saveToCassandra(rdd, keyspace=None, table=None, columns=None, row_format=None, keyed=None, write_conf=None,
-                    **write_conf_kwargs):
+def saveToCassandra(rdd, keyspace=None, table=None, columns=None, row_format=None, keyed=None,
+                    write_conf=None, **write_conf_kwargs):
     '''
-        Saves an RDD to Cassandra. The RDD is expected to contain dicts with keys mapping to CQL columns.
+        Saves an RDD to Cassandra. The RDD is expected to contain dicts with keys mapping to CQL
+        columns.
 
         Arguments:
         @param rdd(RDD):
             The RDD to save. Equals to self when invoking saveToCassandra on a monkey patched RDD.
         @param keyspace(string):in
-            The keyspace to save the RDD in. If not given and the rdd is a CassandraRDD the same keyspace is used.
+            The keyspace to save the RDD in. If not given and the rdd is a CassandraRDD the same
+            keyspace is used.
         @param table(string):
-            The CQL table to save the RDD in. If not given and the rdd is a CassandraRDD the same table is used.
+            The CQL table to save the RDD in. If not given and the rdd is a CassandraRDD the same
+            table is used.
 
         Keyword arguments:
         @param columns(iterable):
@@ -54,7 +57,8 @@ def saveToCassandra(rdd, keyspace=None, table=None, columns=None, row_format=Non
             Make explicit how to map the RDD elements into Cassandra rows.
             If None given the mapping is auto-detected as far as possible.
         @param keyed(bool):
-            Make explicit that the RDD consists of key, value tuples (and not arrays of length two).
+            Make explicit that the RDD consists of key, value tuples (and not arrays of length
+            two).
 
         @param write_conf(WriteConf):
             A WriteConf object to use when saving to Cassandra
@@ -90,8 +94,8 @@ def saveToCassandra(rdd, keyspace=None, table=None, columns=None, row_format=Non
 
 class _CassandraRDD(RDD):
     '''
-        A Resilient Distributed Dataset of Cassandra CQL rows. As any RDD, objects of this class are immutable; i.e.
-        operations on this RDD generate a new RDD.
+        A Resilient Distributed Dataset of Cassandra CQL rows. As any RDD, objects of this class
+        are immutable; i.e. operations on this RDD generate a new RDD.
     '''
 
     def __init__(self, ctx, keyspace, table, row_format=None, read_conf=None, **read_conf_kwargs):
@@ -221,7 +225,8 @@ class _CassandraRDD(RDD):
 
 class CassandraTableScanRDD(_CassandraRDD):
     def __init__(self, ctx, keyspace, table, row_format=None, read_conf=None, **read_conf_kwargs):
-        super(CassandraTableScanRDD, self).__init__(ctx, keyspace, table, row_format, read_conf, **read_conf_kwargs)
+        super(CassandraTableScanRDD, self).__init__(ctx, keyspace, table, row_format, read_conf,
+                                                    **read_conf_kwargs)
 
         self._key_by = ColumnSelector.none()
 
@@ -328,7 +333,8 @@ def joinWithCassandraTable(left_rdd, keyspace, table):
 
         Arguments:
         @param left_rdd(RDD):
-            The RDD to join. Equals to self when invoking joinWithCassandraTable on a monkey patched RDD.
+            The RDD to join. Equals to self when invoking joinWithCassandraTable on a monkey
+            patched RDD.
         @param keyspace(string):
             The keyspace to join on
         @param table(string):

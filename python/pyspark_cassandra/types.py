@@ -36,6 +36,21 @@ def _create_struct(cls, fields, values):
     return cls(**d)
 
 
+# TODO replace this datastructure with something faster
+# but functionally equivalent!
+#
+# >>> %timeit dict(x=1, y=2, z=3)
+# 1000000 loops, best of 3: 292 ns per loop
+#
+# >>> %timeit pyspark_cassandra.Row(x=1, y=2, z=3)
+# 1000000 loops, best of 3: 1.41 µs per loop
+#
+# >>> %timeit FastRow(x=1, y=2, z=3)
+# 1000000 loops, best of 3: 666 ns per loop
+#
+# where FastRow = namedtuple('FastRow', ['x', 'y', 'z'])
+
+
 class Struct(tuple):
     """Adaptation from the pyspark.sql.Row which better supports adding fields"""
 
@@ -139,7 +154,7 @@ class Struct(tuple):
 
     def __reduce__(self):
         keys = list(self.__FIELDS__.keys())
-        values = [self.__FIELDS__[k] for k in keys]
+        values = list(self.__FIELDS__.values())
         return (self._creator(), (keys, values,))
 
 

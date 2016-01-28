@@ -238,7 +238,7 @@ class UDTTest(CassandraTestCase):
                     CREATE TYPE IF NOT EXISTS %s (
                         %s
                     )
-                ''' % (name, ',\n\t'.join('%s %s' % (field, ftype) for field, ftype in udt.items())))
+                ''' % (name, ',\n\t'.join('%s %s' % f for f in udt.items())))
 
             cls.session.execute('''
                 CREATE TABLE IF NOT EXISTS %s (
@@ -379,7 +379,10 @@ class ConfTest(SimpleTypesTestBase):
     def setUp(self):
         super(SimpleTypesTestBase, self).setUp()
         for i in range(100):
-            self.session.execute("INSERT INTO %s (key, text, int) values ('%s', '%s', %s)" % (self.table, i, i, i))
+            self.session.execute(
+                "INSERT INTO %s (key, text, int) values ('%s', '%s', %s)"
+                % (self.table, i, i, i)
+            )
 
     def test_read_conf(self):
         self.rdd(split_count=100).collect()
@@ -388,7 +391,8 @@ class ConfTest(SimpleTypesTestBase):
         self.rdd(consistency_level='LOCAL_QUORUM').collect()
         self.rdd(consistency_level=ConsistencyLevel.LOCAL_QUORUM).collect()
         self.rdd(metrics_enabled=True).collect()
-        self.rdd(read_conf=ReadConf(split_count=10, consistency_level='ALL', metrics_enabled=True)).collect()
+        self.rdd(read_conf=ReadConf(split_count=10, consistency_level='ALL')).collect()
+        self.rdd(read_conf=ReadConf(consistency_level='ALL', metrics_enabled=True)).collect()
 
     def test_write_conf(self):
         rdd = self.sc.parallelize([{'key':i, 'text':i, 'int':i} for i in range(10)])
@@ -441,7 +445,8 @@ class StreamingTest(SimpleTypesTestBase):
         self.ssc.awaitTermination((self.count + 1) * self.interval)
         self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
 
-        read = self.rdd(row_format=RowFormat.TUPLE).select('key', 'text').by_primary_key().collect()
+        tbl = self.rdd(row_format=RowFormat.TUPLE).select('key', 'text')
+        read = tbl.by_primary_key().collect()
         self.assertEqual(len(read), self.size * self.count)
         for (k, v) in read:
             self.assertEqual(k, v)
@@ -459,13 +464,16 @@ class JoinRDDTest(SimpleTypesTestBase):
         self.session.execute('TRUNCATE %s' % self.table)
 
         for k, v in self.rows.items():
-            self.session.execute('INSERT INTO ' + self.table + ' (key, text) values (%s, %s)', (k, v))
+            self.session.execute(
+                'INSERT INTO ' + self.table + ' (key, text) values (%s, %s)', (k, v)
+            )
 
     def test(self):
         rdd = self.sc.parallelize(self.rows.items())
         self.assertEqual(dict(rdd.collect()), self.rows)
 
-        joined = rdd.joinWithCassandraTable(self.keyspace, self.table).on('key').select('key', 'text').cache()
+        tbl = rdd.joinWithCassandraTable(self.keyspace, self.table)
+        joined = tbl.on('key').select('key', 'text').cache()
         self.assertEqual(dict(joined.keys().collect()), dict(joined.values().collect()))
         for (k, v) in joined.collect():
             self.assertEqual(k, v)
