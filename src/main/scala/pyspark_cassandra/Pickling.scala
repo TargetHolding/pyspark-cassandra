@@ -116,6 +116,7 @@ object DataFramePickler extends IObjectPickler {
 }
 
 object UnpickledUUIDConverter extends TypeConverter[UUID] {
-  def targetTypeTag = typeTag[UUID]
+  val tt = typeTag[UUID]
+  def targetTypeTag = tt
   def convertPF = { case holder: UUIDHolder => holder.uuid }
 }
