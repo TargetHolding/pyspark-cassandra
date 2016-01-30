@@ -191,7 +191,7 @@ A `CassandraRDD` is very similar to a regular `RDD` in pyspark. It is extended w
 * ``cassandraCount()``: Lets Cassandra perform a count, instead of loading the data to Spark first.
 * ``saveToCassandra(...)``: As above, but the keyspace and/or table __may__ be omitted to save to the same keyspace and/or table. 
 * ``spanBy(*columns)``: Groups rows by the given columns without shuffling. 
-* ``joinWithCassandraTable(rdd, keyspace, table)``: Join an RDD with a Cassandra table on the partition key. Use .on(...) to specifiy other columns to join on. .select(...), .where(...) and .limit(...) can be used as well.
+* ``joinWithCassandraTable(keyspace, table)``: Join an RDD with a Cassandra table on the partition key. Use .on(...) to specifiy other columns to join on. .select(...), .where(...) and .limit(...) can be used as well.
 
 
 ### pyspark_cassandra.streaming
