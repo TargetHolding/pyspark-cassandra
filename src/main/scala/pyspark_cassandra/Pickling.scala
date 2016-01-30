@@ -46,7 +46,8 @@ class Pickling extends PicklingUtils {
     Unpickler.registerConstructor("pyspark_cassandra.types", "_create_udt", UDTValueUnpickler)
 
     Pickler.registerCustomPickler(classOf[Row], PlainRowPickler)
-    Pickler.registerCustomPickler(classOf[DriverUDTValue], UDTValuePickler)
+    Pickler.registerCustomPickler(classOf[UDTValue], UDTValuePickler)
+    Pickler.registerCustomPickler(classOf[DriverUDTValue], DriverUDTValuePickler)
     Pickler.registerCustomPickler(classOf[DataFrame], DataFramePickler)
 
     TypeConverter.registerConverter(UnpickledUUIDConverter)
@@ -64,6 +65,12 @@ object PlainRowUnpickler extends StructUnpickler {
 }
 
 object UDTValuePickler extends StructPickler {
+  def creator = "pyspark_cassandra.types\n_create_udt\n"
+  def fields(o: Any) = o.asInstanceOf[UDTValue].columnNames
+  def values(o: Any, fields: Seq[_]) = o.asInstanceOf[UDTValue].columnValues
+}
+
+object DriverUDTValuePickler extends StructPickler {
   def creator = "pyspark_cassandra.types\n_create_udt\n"
 
   def fields(o: Any) = o.asInstanceOf[DriverUDTValue].getType().getFieldNames().toSeq

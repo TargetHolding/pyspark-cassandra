@@ -8,6 +8,6 @@ PYSPARK_DRIVER_PYTHON=ipython \
 	--driver-memory 2g \
 	--master local[*] \
 	--jars $DIR/target/scala-2.10/pyspark-cassandra-assembly-$VERSION.jar \
-	--py-files $DIR/target/pyspark_cassandra-$VERSION-py2.7.egg \
+	--py-files $DIR/target/scala-2.10/pyspark-cassandra-assembly-$VERSION.jar \
 	$@
 

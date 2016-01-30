@@ -17,3 +17,4 @@ lib
 .ccm
 metastore_db
 /bin/
+.sp-creds.txt

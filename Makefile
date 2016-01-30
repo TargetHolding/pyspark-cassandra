@@ -98,7 +98,7 @@ define test-integration-for-version
 			--master local[*] \
 			--driver-memory 512m \
 			--conf spark.cassandra.connection.host="localhost" \
-			--jars target/scala-2.10/pyspark-cassandra-assembly-$(VERSION).jar \
+			--jars target/scala-2.10/pyspark-cassandra-assembly-$(VERSION)-py2.jar \
 			--py-files target/pyspark_cassandra-$(VERSION)-py2.7.egg \
 			python/pyspark_cassandra/tests.py
 			
@@ -107,15 +107,36 @@ endef
 
 
 
-dist: dist-python dist-scala
-
-dist-python:
-	python/setup.py bdist_egg -d ../target
-	rm -rf python/build/
-	rm -rf python/*.egg-info
-
-dist-scala:
-	sbt compile assembly
+assembly: clean-pyc
+	sbt assembly
+	cd python ; \
+		find . -mindepth 2 -name '*.py' -print | \
+		zip ../target/scala-2.10/pyspark-cassandra-assembly-$(VERSION).jar -@
 
 
-all: clean dist
+all: clean assembly
+
+
+package: clean-pyc
+	# use spark packages to create the distribution
+	sbt spDist
+
+	# push the python source files into the jar
+	cd python ; \
+		find . -mindepth 2 -name '*.py' -print | \
+		zip ../target/scala-2.10/pyspark-cassandra_2.10-$(VERSION).jar -@
+
+	# copy it to the right name, and update the jar in the zip
+	cp target/scala-2.10/pyspark-cassandra{_2.10,}-$(VERSION).jar
+	cd target/scala-2.10 ;\
+		zip ../pyspark-cassandra-$(VERSION).zip pyspark-cassandra-$(VERSION).jar
+
+	# send the package to spark-packages
+	curl \
+		-u $(shell cat .sp-creds.txt) \
+		-F "git_commit_sha1=$(shell git rev-parse HEAD)" \
+		-F "version=$(VERSION)" \
+		-F "license_id=0" \
+		-F "name=TargetHolding/pyspark-cassandra" \
+		-F "artifact_zip=@target/pyspark-cassandra-$(VERSION).zip" \
+		http://spark-packages.org/api/submit-release
