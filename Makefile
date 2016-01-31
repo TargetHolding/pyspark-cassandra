@@ -117,7 +117,7 @@ dist: clean-pyc
 all: clean dist
 
 
-package: clean-pyc
+publish: clean-pyc
 	# use spark packages to create the distribution
 	sbt spDist
 
