@@ -98,8 +98,8 @@ define test-integration-for-version
 			--master local[*] \
 			--driver-memory 512m \
 			--conf spark.cassandra.connection.host="localhost" \
-			--jars target/scala-2.10/pyspark-cassandra-assembly-$(VERSION)-py2.jar \
-			--py-files target/pyspark_cassandra-$(VERSION)-py2.7.egg \
+			--jars target/scala-2.10/pyspark-cassandra-assembly-$(VERSION).jar \
+			--py-files target/scala-2.10/pyspark-cassandra-assembly-$(VERSION).jar \
 			python/pyspark_cassandra/tests.py
 			
 	echo ======================================================================
@@ -107,14 +107,14 @@ endef
 
 
 
-assembly: clean-pyc
+dist: clean-pyc
 	sbt assembly
 	cd python ; \
 		find . -mindepth 2 -name '*.py' -print | \
 		zip ../target/scala-2.10/pyspark-cassandra-assembly-$(VERSION).jar -@
 
 
-all: clean assembly
+all: clean dist
 
 
 package: clean-pyc
