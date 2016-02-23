@@ -168,14 +168,16 @@ PySpark Cassandra supports saving arbitrary RDD's to Cassandra using:
   * ``columns(iterable)``: The columns to save, i.e. which keys to take from the dicts in the RDD.
   * ``batch_size(int)``: The size in bytes to batch up in an unlogged batch of CQL inserts.
   * ``batch_buffer_size(int)``: The maximum number of batches which are 'pending'.
-  * ``batch_level(string)``: The way batches are formed (defaults to "partition"):
+  * ``batch_grouping_key(string)``: The way batches are formed (defaults to "partition"):
      * ``all``: any row can be added to any batch
      * ``replicaset``: rows are batched for replica sets 
      * ``partition``: rows are batched by their partition key
   * ``consistency_level(cassandra.ConsistencyLevel)``: The consistency level used in writing to Cassandra.
   * ``parallelism_level(int)``: The maximum number of batches written in parallel.
+  * ``throughput_mibps``: Maximum write throughput allowed per single core in MB/s.
   * ``ttl(int or timedelta)``: The time to live as milliseconds or timedelta to use for the values.
   * ``timestamp(int, date or datetime)``: The timestamp in milliseconds, date or datetime to use for the values.
+  * ``metrics_enabled(bool)``: Whether to enable task metrics updates.
 
 
 ### pyspark_cassandra.CassandraRDD
