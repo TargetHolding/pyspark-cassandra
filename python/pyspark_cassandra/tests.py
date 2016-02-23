@@ -32,6 +32,7 @@ import pyspark_cassandra
 import pyspark_cassandra.streaming
 from pyspark_cassandra.conf import ReadConf, WriteConf
 from itertools import chain
+from math import sqrt
 
 
 class CassandraTestCase(unittest.TestCase):
@@ -452,35 +453,77 @@ class StreamingTest(SimpleTypesTestBase):
             self.assertEqual(k, v)
 
 
-
 class JoinRDDTest(SimpleTypesTestBase):
-    rows = {
-       str(c) : str(i) for i, c in
-       enumerate(string.ascii_lowercase)
-    }
 
     def setUp(self):
         super(JoinRDDTest, self).setUp()
-        self.session.execute('TRUNCATE %s' % self.table)
 
-        for k, v in self.rows.items():
+    def test_simple_pk(self):
+        table = 'join_rdd_test_simple_pk'
+
+        self.session.execute('''
+            CREATE TABLE IF NOT EXISTS ''' + table + ''' (
+                key text primary key, value text
+            )
+        ''')
+        self.session.execute('TRUNCATE %s' % table)
+
+        rows = {
+           str(c) : str(i) for i, c in
+           enumerate(string.ascii_lowercase)
+        }
+
+        for k, v in rows.items():
             self.session.execute(
-                'INSERT INTO ' + self.table + ' (key, text) values (%s, %s)', (k, v)
+                'INSERT INTO ' + table + ' (key, value) values (%s, %s)', (k, v)
             )
 
-    def test(self):
-        rdd = self.sc.parallelize(self.rows.items())
-        self.assertEqual(dict(rdd.collect()), self.rows)
+        rdd = self.sc.parallelize(rows.items())
+        self.assertEqual(dict(rdd.collect()), rows)
 
-        tbl = rdd.joinWithCassandraTable(self.keyspace, self.table)
-        joined = tbl.on('key').select('key', 'text').cache()
+        tbl = rdd.joinWithCassandraTable(self.keyspace, table)
+        joined = tbl.on('key').select('key', 'value').cache()
         self.assertEqual(dict(joined.keys().collect()), dict(joined.values().collect()))
         for (k, v) in joined.collect():
             self.assertEqual(k, v)
 
+
+    def test_composite_pk(self):
+        table = 'join_rdd_test_composite_pk'
+
+        self.session.execute('''
+            CREATE TABLE IF NOT EXISTS ''' + table + ''' (
+                pk text, cc text, value text,
+                primary key (pk, cc)
+            )
+        ''')
+        self.session.execute('TRUNCATE %s' % table)
+
+        rows = [
+           # (pk, cc, pk + '-' + cc)
+           (unicode(pk), unicode(cc), unicode(pk + '-' + cc))
+           for pk in string.ascii_lowercase[:3]
+           for cc in (str(i) for i in range(3))
+        ]
+
+        for row in rows:
+            self.session.execute(
+                'INSERT INTO ' + table + ' (pk, cc, value) values (%s, %s, %s)', row
+            )
+
+        rdd = self.sc.parallelize(rows)
+
+        joined = rdd.joinWithCassandraTable(self.keyspace, table).on('pk', 'cc')
+        self.assertEqual(sorted(zip(rows, rows)), sorted(joined.map(tuple).collect()))
+
+        joined = rdd.joinWithCassandraTable(self.keyspace, table).on('pk')
+        self.assertEqual(len(rows) * sqrt(len(rows)), joined.count())
+
+
         # TODO test
         # .where()
         # .limit()
+
 
 
 
