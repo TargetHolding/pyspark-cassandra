@@ -17,30 +17,16 @@ package pyspark_cassandra
 import java.nio.ByteBuffer
 import java.lang.{ Boolean => JBoolean }
 import java.util.{ List => JList, Map => JMap }
-
 import scala.reflect.ClassTag
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Buffer
-
 import org.apache.spark.SparkContext
-
-import com.datastax.driver.core.{ ConsistencyLevel, DataType, ProtocolVersion }
+import com.datastax.driver.core.{ CodecRegistry, ConsistencyLevel, DataType, ProtocolVersion }
 import com.datastax.spark.connector._
 import com.datastax.spark.connector.rdd._
 import com.datastax.spark.connector.writer._
 
 object Utils {
-  def deserialize(dt: DataType, b: ByteBuffer, pv: ProtocolVersion) = dt.deserialize(b, pv)
-
-  /*
-   * // When moving tospark cassandra connector 1.5.x :
-   * import com.datastax.driver.core.CodecRegistry
-   * ...
-   * def deserialize(dt: DataType, b: ByteBuffer, pv: ProtocolVersion) = codec(dt).deserialize(b, pv)
-   * def codec(dt: DataType) = CodecRegistry.DEFAULT_INSTANCE.codecFor(dt)
-   * ...
-  */
-
   def columnSelector(columns: Array[String], default: ColumnSelector = AllColumns) = {
     if (columns != null && columns.length > 0) {
       SomeColumns(columns.map { ColumnName(_) }: _*)

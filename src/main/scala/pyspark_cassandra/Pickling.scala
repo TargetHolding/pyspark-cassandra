@@ -36,6 +36,7 @@ import net.razorvine.pickle.{ IObjectConstructor, IObjectPickler, Opcodes, Pickl
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.DStream
 import java.io.NotSerializableException
+import com.datastax.spark.connector.GettableData
 
 class Pickling extends PicklingUtils {
   override def register() {
@@ -76,17 +77,9 @@ object DriverUDTValuePickler extends StructPickler {
   def fields(o: Any) = o.asInstanceOf[DriverUDTValue].getType().getFieldNames().toSeq
 
   def values(o: Any, fields: Seq[_]) = {
-    // TODO this is a plain hack ... the protocol version might just as well _not_ be the newest
-    val pv = ProtocolVersion.NEWEST_SUPPORTED
-
     val v = o.asInstanceOf[DriverUDTValue]
     v.getType().map {
-      field =>
-        if (v.isNull(field.getName)) {
-          null
-        } else {
-          field.getType().deserialize(v.getBytesUnsafe(field.getName), pv)
-        }
+      field => v.getObject(field.getName)
     }.toList
   }
 }

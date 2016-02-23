@@ -15,14 +15,12 @@
 package pyspark_cassandra
 
 import java.nio.ByteBuffer
-
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.mutable.ArrayBuffer
-
 import org.apache.spark.rdd.RDD
-
 import com.datastax.driver.core.{ DataType, ProtocolVersion }
 import com.datastax.spark.connector.toRDDFunctions
+import com.datastax.spark.connector.GettableData
 
 case class DataFrame(names: Array[String], types: Array[String], values: Seq[ArrayBuffer[Any]])
 
@@ -31,14 +29,9 @@ object SpanBy {
     // span by the given columns
     val spanned = rdd.spanBy { r => columns.map { c => r.row.getBytesUnsafe(c) } }
 
-    // TODO what about the option to just return rows spanned by key?
-
     // deserialize the spans
     spanned.map {
       case (k, rows) => {
-        // peak at the first row to get the protocol version
-        val pv = rows.head.protocolVersion
-
         // get the columns for the data frame (so excluding the ones spanned by)
         val colDefs = rows.head.row.getColumnDefinitions.asList()
         val colTypesWithIdx = colDefs.map {
@@ -49,7 +42,7 @@ object SpanBy {
 
         // deserialize the spanning key
         val deserializedKey = k.zipWithIndex.map {
-          case (bb, i) => Utils.deserialize(colDefs.get(i).getType, bb, pv)
+          case (bb, i) => GettableData.get(rows.head.row, i)
         }
 
         // transpose the rows in to columns and 'deserialize'
@@ -58,7 +51,7 @@ object SpanBy {
           row <- rows
           (ct, i) <- colTypesWithIdx
         } {
-          df(i) += row.deserialize(i)
+          df(i) += deserialize(row, ct, i)
         }
 
         // list the numpy types of the columns in the span (i.e. the non-key columns)
@@ -76,8 +69,11 @@ object SpanBy {
    * will. If possible the value will be written out as a binary string for an entire column to be converted
    * to Numpy arrays.
    */
-  private def deserialize(dataType: DataType, bytes: ByteBuffer, protocolVersion: ProtocolVersion) = {
-    if (binarySupport(dataType)) bytes else Utils.deserialize(dataType, bytes, protocolVersion)
+  private def deserialize(row: UnreadRow, dt: DataType, i: Int) = {
+    if (binarySupport(dt))
+      row.row.getBytesUnsafe(i)
+    else
+      GettableData.get(row.row, i)
   }
 
   /** Checks if a Cassandra type can be represented as a binary string. */
