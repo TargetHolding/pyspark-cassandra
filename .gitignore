@@ -18,3 +18,4 @@ lib
 metastore_db
 /bin/
 .sp-creds.txt
+*.ipynb
