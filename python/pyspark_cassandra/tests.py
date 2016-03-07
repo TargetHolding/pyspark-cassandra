@@ -33,6 +33,7 @@ import pyspark_cassandra.streaming
 from pyspark_cassandra.conf import ReadConf, WriteConf
 from itertools import chain
 from math import sqrt
+from uuid import UUID
 
 
 class CassandraTestCase(unittest.TestCase):
@@ -584,9 +585,33 @@ class RegressionTest(CassandraTestCase):
         self.assertEqual(row.pdf, res[1])
         self.assertEqual(row.delay, res[2])
 
+    def test_89(self):
+        self.session.execute('''
+            CREATE TABLE IF NOT EXISTS test_89 (
+                id text PRIMARY KEY,
+                val text
+            )
+        ''')
+        self.session.execute('''TRUNCATE test_89''')
+
+        self.sc.parallelize([dict(id='a', val='b')]).saveToCassandra(self.keyspace, 'test_89')
+        joined = (self.sc
+            .parallelize([dict(id='a', uuid=UUID('27776620-e46e-11e5-a837-0800200c9a66'))])
+            .joinWithCassandraTable(self.keyspace, 'test_89')
+            .collect()
+        )
+
+        self.assertEqual(len(joined), 1)
+        self.assertEqual(len(joined[0]), 2)
+        left, right = joined[0]
+        self.assertEqual(left['id'], 'a')
+        self.assertEqual(left['uuid'], UUID('27776620-e46e-11e5-a837-0800200c9a66'))
+        self.assertEqual(right['id'], 'a')
+        self.assertEqual(right['val'], 'b')
+
 
 if __name__ == '__main__':
     unittest.main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(JoinDStreamTest)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(RegressionTest)
     # unittest.TextTestRunner().run(suite)
 
