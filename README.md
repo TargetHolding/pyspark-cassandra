@@ -25,9 +25,12 @@ This project was initially forked from https://github.com/Parsely/pyspark-cassan
 Compatibility
 -------------
 
-Currently PySpark Cassandra has been succesfully used with Spark version 1.4 through 1.6. PySpark Cassandra should be compatible with Spark 1.3.1. However, due to [SI-8504](https://issues.scala-lang.org/browse/SI-8504) some unit / integration tests fail.
+Currently PySpark Cassandra has been succesfully used with Spark version 1.5 and 1.6.
 
-PySpark Cassandra is compatible with Cassandra 2.1 and 2.2.
+PySpark Cassandra is compatible with Cassandra:
+* 2.1.5 and higher
+* 2.2
+* 3
 
 Feedback on (in-)compatibility is much appreciated.
 
