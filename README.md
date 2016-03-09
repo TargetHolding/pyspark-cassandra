@@ -228,7 +228,7 @@ sc \
 	.where("key=?", "x") \
 	.filter(lambda r: r["col-b"].contains("foo")) \
 	.map(lambda r: (r["col-a"], 1)
-	.reduceByKey(lamba a, b: a + b)
+	.reduceByKey(lambda a, b: a + b)
 	.collect()
 ```
 
