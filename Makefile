@@ -132,11 +132,5 @@ publish: clean-pyc
 		zip ../pyspark-cassandra-$(VERSION).zip pyspark-cassandra-$(VERSION).jar
 
 	# send the package to spark-packages
-	curl \
-		-u $(shell cat .sp-creds.txt) \
-		-F "git_commit_sha1=$(shell git rev-parse HEAD)" \
-		-F "version=$(VERSION)" \
-		-F "license_id=0" \
-		-F "name=TargetHolding/pyspark-cassandra" \
-		-F "artifact_zip=@target/pyspark-cassandra-$(VERSION).zip" \
-		http://spark-packages.org/api/submit-release
+	spark-package publish -c ".sp-creds.txt" -n "TargetHolding/pyspark-cassandra" -v $(VERSION) -f . -z target/pyspark-cassandra-$(VERSION).zip
+
