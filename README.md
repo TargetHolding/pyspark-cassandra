@@ -24,7 +24,9 @@ This project was initially forked from https://github.com/Parsely/pyspark-cassan
 
 Compatibility
 -------------
+Feedback on (in-)compatibility is much appreciated.
 
+### Spark
 Currently PySpark Cassandra has been succesfully used with Spark version 1.5 and 1.6.
 
 PySpark Cassandra is compatible with Cassandra:
@@ -32,7 +34,11 @@ PySpark Cassandra is compatible with Cassandra:
 * 2.2
 * 3
 
-Feedback on (in-)compatibility is much appreciated.
+### Python
+PySpark Cassandra is used with python 2.7, python 3.3 and 3.4.
+
+### Scala
+PySpark Cassandra is currently only packaged for Scala 2.10
 
 
 
