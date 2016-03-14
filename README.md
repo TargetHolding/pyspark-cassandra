@@ -77,7 +77,7 @@ import pyspark_cassandra
 Building
 --------
 
-### For [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra) Pyspark Cassandra can be compiled using:
+### For [Spark Packages](http://spark-packages.org/package/TargetHolding/pyspark-cassandra) Pyspark Cassandra can be published using:
 ```bash
 sbt compile
 ```
@@ -87,7 +87,7 @@ sbt spPublishLocal
 ```
 The package can be published to Spark Packages with (requires authentication and authorization):
 ```bash
-sbt spPublish
+make publish
 ```
 
 ### For local testing / without Spark Packages
