@@ -260,15 +260,18 @@ class UDTTest(CassandraTestCase):
         self.assertTrue(isinstance(read, UDT), 'value read is not an instance of UDT')
 
         udt = self.types[type_name]
-        if udt:
-            for field in udt:
-                self.assertEqual(getattr(read, field), value[field])
+        for field in udt:
+            self.assertEqual(getattr(read, field), value[field])
 
     def test_simple_udt(self):
         self.read_write_test('simple_udt', UDT(col_text='text', col_int=1, col_boolean=True))
 
     def test_simple_udt_null(self):
+        super(UDTTest, self).read_write_test('simple_udt', None)
+
+    def test_simple_udt_null_field(self):
         self.read_write_test('simple_udt', UDT(col_text='text', col_int=None, col_boolean=True))
+        self.read_write_test('simple_udt', UDT(col_text=None, col_int=1, col_boolean=True))
 
     def test_udt_wset(self):
         self.read_write_test('udt_wset', UDT(col_text='text', col_set={1, 2, 3}))
