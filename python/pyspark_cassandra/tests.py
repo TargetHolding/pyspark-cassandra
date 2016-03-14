@@ -242,11 +242,22 @@ class UDTTest(CassandraTestCase):
                     )
                 ''' % (name, ',\n\t'.join('%s %s' % f for f in udt.items())))
 
+            fields = ', '.join(
+                '{udt_type} frozen<{udt_type}>'.format(udt_type=udt_type)
+                for udt_type in cls.types
+            )
+
+            fields += ', ' + ', '.join(
+                '{udt_type}_{col_type} {col_type}<frozen<{udt_type}>>'.format(udt_type=udt_type, col_type=col_type)
+                for udt_type in cls.types
+                for col_type in ('set', 'list')
+            )
+
             cls.session.execute('''
                 CREATE TABLE IF NOT EXISTS %s (
                     key text primary key, %s
                 )
-            ''' % (cls.table, ', '.join('%s frozen<%s>' % (name, name) for name in cls.types)))
+            ''' % (cls.table, fields))
 
     def setUp(self):
         if not self.udt_support:
@@ -257,7 +268,8 @@ class UDTTest(CassandraTestCase):
 
     def read_write_test(self, type_name, value):
         read = super(UDTTest, self).read_write_test(type_name, value)
-        self.assertTrue(isinstance(read, UDT), 'value read is not an instance of UDT')
+        self.assertTrue(isinstance(read, UDT),
+                        'value read is not an instance of UDT')
 
         udt = self.types[type_name]
         for field in udt:
@@ -275,6 +287,17 @@ class UDTTest(CassandraTestCase):
 
     def test_udt_wset(self):
         self.read_write_test('udt_wset', UDT(col_text='text', col_set={1, 2, 3}))
+
+    def test_collection_of_udts(self):
+        super(UDTTest, self).read_write_test('simple_udt_list', None)
+
+        udts = [UDT(col_text='text ' + str(i), col_int=i, col_boolean=bool(i % 2)) for i in range(10)]
+        super(UDTTest, self).read_write_test('simple_udt_set', set(udts))
+        super(UDTTest, self).read_write_test('simple_udt_list', udts)
+
+        udts = [UDT(col_text='text ' + str(i), col_int=i, col_boolean=None) for i in range(10)]
+        super(UDTTest, self).read_write_test('simple_udt_set', set(udts))
+        super(UDTTest, self).read_write_test('simple_udt_list', udts)
 
 
 
@@ -614,7 +637,7 @@ class RegressionTest(CassandraTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(RegressionTest)
-    # unittest.TextTestRunner().run(suite)
+    # unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(UDTTest)
+    unittest.TextTestRunner().run(suite)
 
