@@ -50,13 +50,6 @@ class Pickling extends PicklingUtils {
     Pickler.registerCustomPickler(classOf[UDTValue], UDTValuePickler)
     Pickler.registerCustomPickler(classOf[DriverUDTValue], DriverUDTValuePickler)
     Pickler.registerCustomPickler(classOf[DataFrame], DataFramePickler)
-
-    try{
-      // Check if type converter for UUIDHolder already registered
-      TypeConverter.forType(typeTag[UUIDHolder])
-    }catch {
-      case e:IllegalArgumentException => TypeConverter.registerConverter(UnpickledUUIDConverter)
-    }
   }
 }
 
