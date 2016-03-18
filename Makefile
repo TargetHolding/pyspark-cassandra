@@ -61,7 +61,8 @@ test-integration-matrix: \
 	test-integration-spark-1.5.0 \
 	test-integration-spark-1.5.1 \
 	test-integration-spark-1.5.2 \
-	test-integration-spark-1.6.0
+	test-integration-spark-1.6.0 \
+	test-integration-spark-1.6.1
 
 test-travis: install-cassandra-driver
 	$(call test-integration-for-version,$$SPARK_VERSION,$$SPARK_PACKAGE_TYPE)
@@ -83,6 +84,9 @@ test-integration-spark-1.5.2:
 
 test-integration-spark-1.6.0:
 	$(call test-integration-for-version,1.6.0,hadoop2.6)
+
+test-integration-spark-1.6.1:
+	$(call test-integration-for-version,1.6.1,hadoop2.6)
 
 define test-integration-for-version
 	echo ======================================================================
