@@ -39,23 +39,6 @@ from uuid import UUID
 class CassandraTestCase(unittest.TestCase):
     keyspace = "test_pyspark_cassandra"
 
-    @classmethod
-    def setUpClass(cls):
-        super(CassandraTestCase, cls).setUpClass()
-        cls.sc = CassandraSparkContext(conf=SparkConf().setAppName("PySpark Cassandra Test"))
-        cls.session = Cluster().connect()
-        cls.session.execute('''
-            CREATE KEYSPACE IF NOT EXISTS %s
-            WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-        ''' % (cls.keyspace,))
-        cls.session.set_keyspace(cls.keyspace)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(CassandraTestCase, cls).tearDownClass()
-        cls.session.shutdown()
-        cls.sc.stop()
-
     def rdd(self, keyspace=None, table=None, key=None, column=None, **kwargs):
         keyspace = keyspace or getattr(self, 'keyspace', None)
         table = table or getattr(self, 'table', None)
@@ -670,7 +653,24 @@ class RegressionTest(CassandraTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(RegressionTest)
-    # unittest.TextTestRunner().run(suite)
+    try:
+        # connect to cassandra and create a keyspace for testing
+        CassandraTestCase.session = Cluster().connect()
+        CassandraTestCase.session.execute('''
+            CREATE KEYSPACE IF NOT EXISTS %s
+            WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+        ''' % (CassandraTestCase.keyspace,))
+        CassandraTestCase.session.set_keyspace(CassandraTestCase.keyspace)
+
+        # create a cassandra spark context
+        CassandraTestCase.sc = CassandraSparkContext(conf=SparkConf().setAppName("PySpark Cassandra Test"))
+
+        # perform the unit tests
+        unittest.main()
+        # suite = unittest.TestLoader().loadTestsFromTestCase(RegressionTest)
+        # unittest.TextTestRunner().run(suite)
+    finally:
+        # stop the spark context and cassandra session
+        CassandraTestCase.sc.stop()
+        CassandraTestCase.session.shutdown()
 
