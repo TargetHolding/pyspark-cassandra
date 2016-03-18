@@ -635,9 +635,42 @@ class RegressionTest(CassandraTestCase):
         self.assertEqual(right['id'], 'a')
         self.assertEqual(right['val'], 'b')
 
+    def test_93(self):
+        self.session.execute('''
+            CREATE TABLE IF NOT EXISTS test_93 (
+                name text,
+                data_final blob,
+                data_inter blob,
+                family_label text,
+                rand double,
+                source text,
+                score float,
+                PRIMARY KEY (name)
+            )
+        ''')
+
+        self.sc.parallelize([
+            Row(name=str(i), data_final=bytearray(str(i)), data_inter=bytearray(str(i)),
+                family_label=str(i), rand=i / 10, source=str(i), score=i * 10)
+            for i in range(4)
+        ]).saveToCassandra(self.keyspace, 'test_93')
+
+        joined = (self.sc
+            .parallelize([
+                Row(name='1', score=0.4),
+                Row(name='2', score=0.5),
+            ])
+            .joinWithCassandraTable(self.keyspace, 'test_93')
+            .on('name').collect()
+        )
+
+        self.assertEqual(len(joined), 2)
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase(UDTTest)
+    # suite = unittest.TestLoader().loadTestsFromTestCase(RegressionTest)
     # unittest.TextTestRunner().run(suite)
 
