@@ -86,6 +86,7 @@ class SimpleTypesTestBase(CassandraTestCase):
     def setUp(self):
         super(SimpleTypesTestBase, self).setUp()
         self.session.execute('TRUNCATE ' + self.table)
+        print(list(self.session.execute('select * from ' + self.table)))
         self.assertEqual(self.rdd().count(), 0)
 
 
@@ -165,6 +166,7 @@ class CollectionTypesTest(CassandraTestCase):
     def setUp(self):
         super(CollectionTypesTest, self).setUp()
         self.session.execute('TRUNCATE %s' % self.table)
+        print(list(self.session.execute('select * from ' + self.table)))
         self.assertEqual(self.rdd().count(), 0)
 
     def collections_common_tests(self, collection, column):
@@ -251,6 +253,7 @@ class UDTTest(CassandraTestCase):
 
         super(UDTTest, self).setUp()
         self.session.execute('TRUNCATE %s' % self.table)
+        print(list(self.session.execute('select * from ' + self.table)))
         self.assertEqual(self.rdd().count(), 0)
 
     def read_write_test(self, type_name, value):
@@ -481,6 +484,7 @@ class JoinRDDTest(SimpleTypesTestBase):
             )
         ''')
         self.session.execute('TRUNCATE %s' % table)
+        print(list(self.session.execute('select * from ' + self.table)))
         self.assertEqual(self.rdd(table=table).count(), 0)
 
         rows = {
@@ -513,6 +517,7 @@ class JoinRDDTest(SimpleTypesTestBase):
             )
         ''')
         self.session.execute('TRUNCATE %s' % table)
+        print(list(self.session.execute('select * from ' + table)))
         self.assertEqual(self.rdd(table=table).count(), 0)
 
         rows = [
@@ -590,6 +595,7 @@ class RegressionTest(CassandraTestCase):
             )
         ''')
         self.session.execute('''TRUNCATE test_64''')
+        print(list(self.session.execute('select * from test_64')))
         self.assertEqual(self.rdd(table='test_64').count(), 0)
 
         res = ([0.0, 1.0, 2.0], [12.0, 3.0, 0.0], 0.0)
@@ -609,6 +615,7 @@ class RegressionTest(CassandraTestCase):
             )
         ''')
         self.session.execute('''TRUNCATE test_89''')
+        print(list(self.session.execute('''select * from test_89''')))
         self.assertEqual(self.rdd(table='test_89').count(), 0)
 
         self.sc.parallelize([dict(id='a', val='b')]).saveToCassandra(self.keyspace, 'test_89')
@@ -640,6 +647,7 @@ class RegressionTest(CassandraTestCase):
             )
         ''')
         self.session.execute('''TRUNCATE test_93''')
+        print(list(self.session.execute('''select * from test_93''')))
         self.assertEqual(self.rdd(table='test_93').count(), 0)
 
         self.sc.parallelize([
