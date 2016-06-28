@@ -82,9 +82,11 @@ class SimpleTypesTestBase(CassandraTestCase):
             )
         ''' % ', '.join('{0} {0}'.format(t) for t in cls.simple_types))
 
+
     def setUp(self):
         super(SimpleTypesTestBase, self).setUp()
         self.session.execute('TRUNCATE ' + self.table)
+        self.assertEqual(self.rdd().count(), 0)
 
 
 class SimpleTypesTest(SimpleTypesTestBase):
@@ -163,6 +165,7 @@ class CollectionTypesTest(CassandraTestCase):
     def setUp(self):
         super(CollectionTypesTest, self).setUp()
         self.session.execute('TRUNCATE %s' % self.table)
+        self.assertEqual(self.rdd().count(), 0)
 
     def collections_common_tests(self, collection, column):
         rows = [
@@ -248,6 +251,7 @@ class UDTTest(CassandraTestCase):
 
         super(UDTTest, self).setUp()
         self.session.execute('TRUNCATE %s' % self.table)
+        self.assertEqual(self.rdd().count(), 0)
 
     def read_write_test(self, type_name, value):
         read = super(UDTTest, self).read_write_test(type_name, value)
@@ -477,6 +481,7 @@ class JoinRDDTest(SimpleTypesTestBase):
             )
         ''')
         self.session.execute('TRUNCATE %s' % table)
+        self.assertEqual(self.rdd(table=table).count(), 0)
 
         rows = {
            str(c) : str(i) for i, c in
@@ -508,6 +513,7 @@ class JoinRDDTest(SimpleTypesTestBase):
             )
         ''')
         self.session.execute('TRUNCATE %s' % table)
+        self.assertEqual(self.rdd(table=table).count(), 0)
 
         rows = [
            # (pk, cc, pk + '-' + cc)
@@ -584,6 +590,7 @@ class RegressionTest(CassandraTestCase):
             )
         ''')
         self.session.execute('''TRUNCATE test_64''')
+        self.assertEqual(self.rdd(table='test_64').count(), 0)
 
         res = ([0.0, 1.0, 2.0], [12.0, 3.0, 0.0], 0.0)
         rdd = self.sc.parallelize([res])
@@ -602,6 +609,7 @@ class RegressionTest(CassandraTestCase):
             )
         ''')
         self.session.execute('''TRUNCATE test_89''')
+        self.assertEqual(self.rdd(table='test_89').count(), 0)
 
         self.sc.parallelize([dict(id='a', val='b')]).saveToCassandra(self.keyspace, 'test_89')
         joined = (self.sc
@@ -631,6 +639,8 @@ class RegressionTest(CassandraTestCase):
                 PRIMARY KEY (name)
             )
         ''')
+        self.session.execute('''TRUNCATE test_93''')
+        self.assertEqual(self.rdd(table='test_93').count(), 0)
 
         self.sc.parallelize([
             Row(name=str(i), data_final=bytearray(str(i)), data_inter=bytearray(str(i)),
