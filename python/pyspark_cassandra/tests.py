@@ -671,6 +671,9 @@ if __name__ == '__main__':
         # unittest.TextTestRunner().run(suite)
     finally:
         # stop the spark context and cassandra session
-        CassandraTestCase.sc.stop()
-        CassandraTestCase.session.shutdown()
+        # stop the spark context and cassandra session
+        if hasattr(CassandraTestCase, 'sc'):
+            CassandraTestCase.sc.stop()
+        if hasattr(CassandraTestCase, 'session'):
+            CassandraTestCase.session.shutdown()
 
