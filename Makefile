@@ -29,12 +29,14 @@ install-cassandra-driver: install-venv
 install-ccm: install-venv
 	venv/bin/pip install ccm
 
-start-cassandra: install-ccm	
-	mkdir -p .ccm
-	venv/bin/ccm status || venv/bin/ccm create pyspark_cassandra_test -v $(CASSANDRA_VERSION) -n 1 -s
+start-cassandra: install-ccm stop-cassandra
+	venv/bin/ccm create pyspark_cassandra_test -v binary:$(CASSANDRA_VERSION) -n 1
+	venv/bin/ccm switch pyspark_cassandra_test
+	venv/bin/ccm start --wait-for-binary-proto
 	
 stop-cassandra:
-	venv/bin/ccm remove
+	venv/bin/ccm stop || :
+	venv/bin/ccm remove || :
 
 
 
@@ -57,11 +59,7 @@ test-integration-teardown: \
 	
 test-integration-matrix: \
 	install-cassandra-driver \
-	test-integration-spark-1.4.1 \
-	test-integration-spark-1.5.0 \
-	test-integration-spark-1.5.1 \
 	test-integration-spark-1.5.2 \
-	test-integration-spark-1.6.0 \
 	test-integration-spark-1.6.1
 
 test-travis: install-cassandra-driver
