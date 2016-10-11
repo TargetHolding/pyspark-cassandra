@@ -1,6 +1,10 @@
 PySpark Cassandra
 =================
 
+PySpark Cassandra is no longer maintained. Development effort has moved away from Spark to pure Python environment.
+
+---
+
 [![Build Status](https://travis-ci.org/TargetHolding/pyspark-cassandra.svg)](https://travis-ci.org/TargetHolding/pyspark-cassandra)
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/1fb73418b06b4db18e3a4103a0ce056c)](https://www.codacy.com/app/frensjan/pyspark-cassandra)
 
