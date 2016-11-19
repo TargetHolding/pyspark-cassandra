@@ -299,19 +299,3 @@ Or with a DStream:
 ```python
 joined = dstream.joinWithCassandraTable(self.keyspace, self.table, ['e-mail', 'followers'], ['id'])
 ```
-
-
-Problems / ideas?
------------------
-Feel free to use the issue tracker propose new functionality and / or report bugs. In case of bugs please provides some code to reproduce the issue or at least some context information such as software used, CQL schema, etc.
-
-
-
-Contributing
-------------
-
-1. Fork it
-2. Create your feature branch (git checkout -b my-new-feature)
-3. Commit your changes (git commit -am 'Add some feature')
-4. Push to the branch (git push origin my-new-feature)
-5. Create new Pull Request
