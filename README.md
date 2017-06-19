@@ -1,7 +1,7 @@
 PySpark Cassandra
 =================
 
-PySpark Cassandra is no longer maintained. Development effort has moved away from Spark to pure Python environment.
+**This PySpark Cassandra repository is no longer maintained. Please check this repository for Spark 2.0+ support: https://github.com/anguenot/pyspark-cassandra**
 
 ---
 
